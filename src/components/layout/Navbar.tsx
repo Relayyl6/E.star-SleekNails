@@ -13,6 +13,9 @@ export default function Navbar() {
   const { items, setIsOpen } = useCart();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
+  const normalizedPath = pathname.toLowerCase();
+  const isHiddenRoute = normalizedPath.startsWith('/login') || normalizedPath.startsWith('/register') || normalizedPath.startsWith('/dashboard') || normalizedPath.startsWith('/vendor') || normalizedPath.startsWith('/profile');
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
@@ -21,6 +24,8 @@ export default function Navbar() {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (isHiddenRoute) return null;
 
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -108,11 +113,18 @@ export default function Navbar() {
               {link.name}
             </Link>
           ))}
+          <Link 
+            href="/login" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="px-6 py-4 text-white text-lg font-medium hover:bg-white/5 transition-colors border-b border-white/5"
+          >
+            Sign in
+          </Link>
           <button 
             onClick={() => { setMobileMenuOpen(false); setIsOpen(true); }}
             className="px-6 py-4 text-left text-white text-lg font-medium hover:bg-white/5 transition-colors"
           >
-            Sign in / My bookings
+            My bookings
           </button>
         </div>
       </nav>

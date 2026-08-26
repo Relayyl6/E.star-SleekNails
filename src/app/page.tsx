@@ -77,7 +77,7 @@ export default function HomePage() {
 
       <div className="bg-surface relative z-20">
         {/* Tagline / Typographic Collage */}
-      <section className="py-12 md:py-16 px-6 border-t border-black/5 relative flex items-center justify-center">
+      <section className="py-8 md:py-10 px-6 border-t border-black/5 relative flex items-center justify-center">
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes hinge-wobble {
             0%, 100% { transform: rotate(0deg); }
@@ -94,11 +94,11 @@ export default function HomePage() {
         `}} />
         
         <div className="relative max-w-2xl mx-auto flex flex-col items-center justify-center space-y-4">
-          <p className="text-sm md:text-base text-gray-500 font-light tracking-[0.2em] uppercase mb-2">
+          <p className="text-sm md:text-base text-gray-500 font-light tracking-[0.2em] uppercase mb-1">
             The E.star Signature
           </p>
           
-          <div className="relative flex items-center justify-center flex-wrap gap-x-6 gap-y-3 text-center leading-none">
+          <div className="relative flex items-center justify-center flex-wrap gap-x-6 gap-y-2 text-center leading-none">
             <span className="text-3xl md:text-5xl font-serif text-black/80 italic">Clean.</span>
             <span className="text-2xl md:text-4xl font-sans font-bold text-primary tracking-tighter uppercase animate-hinge hover:animate-none cursor-default">Hardgel</span>
             <span className="text-3xl md:text-4xl font-serif text-black/60 font-light">Acrylic</span>
@@ -109,7 +109,7 @@ export default function HomePage() {
             <span className="text-sm md:text-base font-sans tracking-widest text-black/40 uppercase rotate-2 mt-2">Long-lasting</span>
           </div>
           
-          <p className="mt-6 text-gray-600 font-light text-center max-w-md text-sm md:text-base leading-relaxed">
+          <p className="mt-4 text-gray-600 font-light text-center max-w-md text-sm leading-relaxed">
             We specialize in creating flawless, enduring nail sets tailored specifically to your aesthetic.
           </p>
         </div>
@@ -132,24 +132,30 @@ export default function HomePage() {
               ].map((service) => (
                 <div 
                   key={service.name}
-                  className="bg-white rounded-[1.5rem] p-5 lg:p-6 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary flex flex-col sm:flex-row gap-4 lg:gap-6 group"
+                  className="bg-white rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary flex flex-row justify-between gap-4 md:gap-6 group"
                 >
-                  <div className="flex-1 flex flex-col">
-                    <h3 className="font-serif text-xl lg:text-2xl text-[#1A1414] mb-1">{service.name}</h3>
-                    <p className="text-sm text-gray-500 mb-3">{service.duration} · {service.price}</p>
-                    <p className="text-[13px] text-gray-700 leading-relaxed mb-4 flex-1">
-                      {service.desc} <Link href={`/book?service=${service.name.toLowerCase().replace(/ /g, '-')}`} className="text-primary hover:underline ml-1">Show more...</Link>
+                  <div className="flex-1 flex flex-col min-w-0">
+                    <h3 className="font-serif text-xl md:text-2xl text-[#1A1414] mb-1 truncate">{service.name}</h3>
+                    <p className="text-sm font-medium text-gray-500 mb-2">{service.duration} · {service.price}</p>
+                    <p className="text-[13px] text-gray-700 leading-relaxed line-clamp-3 mb-2 flex-1">
+                      {service.desc}
                     </p>
+                    <Link 
+                      href={`/services/${service.name.toLowerCase().replace(/ /g, '-')}`}
+                      className="mt-auto text-xs font-semibold text-primary hover:underline underline-offset-2 w-fit"
+                    >
+                      Show more...
+                    </Link>
                   </div>
                   
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-4 shrink-0">
+                  <div className="flex flex-col items-end justify-between shrink-0 gap-3">
                     <Link 
-                      href={`/book?service=${service.name.toLowerCase().replace(/ /g, '-')}`}
-                      className="px-5 lg:px-6 py-2 lg:py-2.5 rounded-xl text-sm font-semibold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap"
+                      href={`/services`}
+                      className="px-4 py-1.5 rounded-xl text-[13px] font-bold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap"
                     >
                       Select
                     </Link>
-                    <div className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden shadow-sm group-hover:ring-2 group-hover:ring-primary ring-offset-2 transition-all">
+                    <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-sm group-hover:ring-2 group-hover:ring-primary ring-offset-2 transition-all mt-auto">
                       <Image 
                         src={service.image} 
                         alt={service.name} 
@@ -250,6 +256,14 @@ export default function HomePage() {
             </a>
           </div>
         </section>
+
+        {/* Floating Policy Button */}
+        <div className="fixed bottom-6 right-6 z-40">
+          <Link href="/policy" className="bg-white/80 backdrop-blur-md border border-black/10 text-xs font-semibold px-4 py-2 rounded-full shadow-lg hover:shadow-xl hover:bg-white text-gray-700 hover:text-primary transition-all flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Policy & Terms
+          </Link>
+        </div>
       </div>
     </div>
   );

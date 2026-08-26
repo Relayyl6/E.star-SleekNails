@@ -72,7 +72,7 @@ export default function BookingDrawer() {
         </div>
         
         <div className="p-6 border-t border-white/10 bg-[#1A1414]">
-          <Link href="/book/date" onClick={() => setIsOpen(false)} className={`block w-full py-4 text-center rounded-full font-bold transition-all shadow-lg ${items.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white/10 text-white/40 cursor-not-allowed pointer-events-none'}`}>
+          <Link href="/book/date-time" onClick={() => setIsOpen(false)} className={`block w-full py-4 text-center rounded-full font-bold transition-all shadow-lg ${items.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white/10 text-white/40 cursor-not-allowed pointer-events-none'}`}>
             Continue to Date & Time
           </Link>
         </div>
