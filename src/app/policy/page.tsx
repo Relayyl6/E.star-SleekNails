@@ -76,7 +76,7 @@ export default function PolicyPage() {
           {policies.map((policy, idx) => (
             <div 
               key={policy.id} 
-              className="bg-white rounded-[2rem] p-6 shadow-sm border border-black/5 hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-8"
+              className="bg-white rounded-xl p-6 shadow-sm border border-black/5 hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-8"
               style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'both' }}
             >
               <div className="flex items-center gap-4 mb-6">

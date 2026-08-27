@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
 
 export default function BookingDrawer() {
-  const { items, isOpen, setIsOpen, updateQuantity, removeItem } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clearCart, startTimer } = useCart();
 
   return (
     <>
@@ -23,12 +23,12 @@ export default function BookingDrawer() {
           <h2 className="text-xl font-serif">Selected Services</h2>
           <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M6 18L18 6M6 6l12 12"></path>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scrollbar">
           {items.length === 0 ? (
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10 text-center mt-10">
               <p className="text-white/60 mb-4">No services selected yet.</p>
@@ -39,9 +39,9 @@ export default function BookingDrawer() {
               </button>
             </div>
           ) : (
-            items.map(item => (
+            items.map((item) => (
               <div key={item.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 flex gap-4">
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10">
                   <Image src={item.image} alt={item.name} fill className="object-cover" />
                 </div>
                 <div className="flex-1">
@@ -69,10 +69,26 @@ export default function BookingDrawer() {
               </div>
             ))
           )}
+          <>
+            {items.length !== 0 && (
+                <div className='flex flex-row gap-3 mx-auto mt-4'>
+                  <button onClick={() => setIsOpen(false)} className="text-primary font-medium hover:underline">
+                    <Link href="/services">
+                      Browse services
+                    </Link>
+                  </button>
+
+                  <button onClick={() => { clearCart(); setIsOpen(false) }} className="text-red-600 font-medium hover:underline">
+                    Clear Cart
+                  </button>
+                </div>
+              )
+            }
+          </>
         </div>
         
         <div className="p-6 border-t border-white/10 bg-[#1A1414]">
-          <Link href="/book/date-time" onClick={() => setIsOpen(false)} className={`block w-full py-4 text-center rounded-full font-bold transition-all shadow-lg ${items.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white/10 text-white/40 cursor-not-allowed pointer-events-none'}`}>
+          <Link href="/book/date-time" onClick={() => { startTimer(); setIsOpen(false); }} className={`block w-full py-4 text-center rounded-full font-bold transition-all shadow-lg ${items.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white/10 text-white/40 cursor-not-allowed pointer-events-none'}`}>
             Continue to Date & Time
           </Link>
         </div>

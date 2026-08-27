@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase/config';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { toast } from 'sonner';
 
 const videos = [
   "/videos/1.mp4",
@@ -26,9 +30,93 @@ const quotes = [
 ];
 
 export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'login' | 'register' }) {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      let userCredential;
+      
+      if (isLogin) {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        if (userCredential.user) {
+          await updateProfile(userCredential.user, { displayName: fullName });
+        }
+      }
+
+      const idToken = await userCredential.user.getIdToken();
+
+      // Send the token to our secure backend to set a session cookie and check roles
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: idToken })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.role === 'ADMIN') {
+          router.push('/vendor/settings/calendar-sync');
+        } else {
+          router.push('/dashboard');
+        }
+        toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Authentication failed on server");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const idToken = await userCredential.user.getIdToken();
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: idToken })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.role === 'ADMIN') {
+          router.push('/vendor/settings/calendar-sync');
+        } else {
+          router.push('/dashboard');
+        }
+        toast.success("Successfully signed in with Google!");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Authentication failed on server");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "An error occurred during Google Sign In");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -135,12 +223,14 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
             </p>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={handleAuthSubmit}>
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                 <input 
-                  type="text" 
+                  type="text"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
                   placeholder="Enter your full name"
                 />
@@ -150,8 +240,11 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input 
                 type="email" 
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-                placeholder="Enter your email"
+                placeholder="Enter your email (e.g. dev@example.com)"
               />
             </div>
             
@@ -160,6 +253,9 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
               <div className="relative">
                 <input 
                   type="password" 
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
                   placeholder="Enter your password"
                 />
@@ -183,8 +279,10 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
 
             <button 
               type="submit" 
-              className="w-full bg-[#1A1414] text-white rounded-xl px-4 py-3.5 font-bold hover:bg-black transition-all mt-4 shadow-lg shadow-black/10"
+              disabled={isLoading}
+              className="w-full bg-[#1A1414] text-white rounded-xl px-4 py-3.5 font-bold hover:bg-black transition-all mt-4 shadow-lg shadow-black/10 disabled:opacity-50 flex items-center justify-center gap-2"
             >
+              {isLoading && <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
               {isLogin ? 'Sign In' : 'Create Account'}
             </button>
             
@@ -196,7 +294,9 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
             
             <button 
               type="button" 
-              className="w-full bg-white border border-gray-200 text-[#1A1414] rounded-xl px-4 py-3.5 font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-3 shadow-sm"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              className="w-full bg-white border border-gray-200 text-[#1A1414] rounded-xl px-4 py-3.5 font-bold hover:bg-gray-50 transition-all flex items-center justify-center gap-3 shadow-sm disabled:opacity-50"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
               {isLogin ? 'Sign in with Google' : 'Sign up with Google'}

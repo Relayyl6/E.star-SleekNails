@@ -1,35 +1,128 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCart } from '@/context/CartContext';
+import { toast } from 'sonner';
 
 export default function DetailsForm() {
   const router = useRouter();
+  const { items, bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer } = useCart();
   const [agreed, setAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    startTimer();
+  }, [startTimer]);
+
+  useEffect(() => {
+    if (timeLeft === 0) {
+      router.push('/');
+    }
+  }, [timeLeft, router]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    notes: ''
+    firstName: bookingDetails.firstName || '',
+    lastName: bookingDetails.lastName || '',
+    email: bookingDetails.email || '',
+    phone: bookingDetails.phone || '',
+    instagram: bookingDetails.instagram || '',
+    notes: bookingDetails.notes || ''
   });
 
-  const handleContinue = (e: React.FormEvent) => {
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create a local URL for the preview immediately
+      const url = URL.createObjectURL(file);
+      
+      // Also convert to base64 for persistent storage in the context if needed
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        // Update context immediately so it persists across navigation
+        setBookingDetails(prev => ({ ...prev, photoUrl: base64String }));
+      };
+      
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (agreed && formData.firstName && formData.phone) {
-      router.push('/book/success');
+      setIsSubmitting(true);
+
+      const total = items.reduce((sum, item) => {
+        const priceNum = parseInt(item.price.replace(/[^\d]/g, ''));
+        return sum + (priceNum * (item.quantity || 1));
+      }, 0);
+
+      const bookingRef = "ESN-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+      try {
+        const res = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            date: bookingDetails.date,
+            time: bookingDetails.time,
+            items,
+            total,
+            ref: bookingRef,
+            photoUrl: bookingDetails.photoUrl || null
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.status === 409) {
+          toast.error("Sorry, this time slot was just booked by someone else. Please go back and select a different time.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (!data.success) {
+          throw new Error(data.error || "Failed to book");
+        }
+
+        setBookingDetails(prev => ({
+          ...prev,
+          ...formData,
+          bookingRef
+        }));
+        router.push('/book/success');
+        
+      } catch (err: any) {
+        console.error(err);
+        toast.error("An error occurred. Please try again.");
+        setIsSubmitting(false);
+      }
     }
   };
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-serif text-3xl md:text-4xl text-[#1A1414] mb-3">Your Details</h1>
-        <p className="text-gray-500">Almost there! We just need a few details to secure your spot.</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="font-serif text-3xl md:text-4xl text-[#1A1414] mb-3">Your Details</h1>
+          <p className="text-gray-500">Almost there! We just need a few details to secure your spot.</p>
+        </div>
+        <div className="bg-[#1A1414] text-white px-4 py-2 rounded-xl text-center hidden md:block shrink-0 ml-4">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-white/50 mb-0.5">Time Left</p>
+          <p className="font-mono font-bold text-lg leading-none">{formatTime(timeLeft)}</p>
+        </div>
       </div>
 
       <form onSubmit={handleContinue} className="space-y-6">
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-gray-700">First Name *</label>
@@ -38,7 +131,7 @@ export default function DetailsForm() {
               required
               value={formData.firstName}
               onChange={e => setFormData({...formData, firstName: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-gray-50" 
+              className="w-full px-4 py-3 rounded-xl border border-black/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-black/[0.02] backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]" 
               placeholder="Jane" 
             />
           </div>
@@ -48,7 +141,7 @@ export default function DetailsForm() {
               type="text" 
               value={formData.lastName}
               onChange={e => setFormData({...formData, lastName: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-gray-50" 
+              className="w-full px-4 py-3 rounded-xl border border-black/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-black/[0.02] backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]" 
               placeholder="Doe" 
             />
           </div>
@@ -62,7 +155,7 @@ export default function DetailsForm() {
               required
               value={formData.email}
               onChange={e => setFormData({...formData, email: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-gray-50" 
+              className="w-full px-4 py-3 rounded-xl border border-black/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-black/[0.02] backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]" 
               placeholder="jane@example.com" 
             />
           </div>
@@ -73,7 +166,7 @@ export default function DetailsForm() {
               required
               value={formData.phone}
               onChange={e => setFormData({...formData, phone: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-gray-50" 
+              className="w-full px-4 py-3 rounded-xl border border-black/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-black/[0.02] backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]" 
               placeholder="+234 800 000 0000" 
             />
           </div>
@@ -83,13 +176,26 @@ export default function DetailsForm() {
           <label className="text-sm font-semibold text-gray-700 flex justify-between">
             <span>Inspiration Photo (Optional)</span>
           </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer group">
-            <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-            </div>
-            <p className="text-sm font-medium text-gray-700 mb-1">Click to upload or drag and drop</p>
-            <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
-          </div>
+          <label className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer group flex flex-col items-center justify-center relative overflow-hidden h-32">
+            <input 
+              type="file" 
+              accept="image/*"
+              className="hidden" 
+              onChange={handlePhotoUpload}
+            />
+            {bookingDetails.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={bookingDetails.photoUrl} alt="Inspiration" className="absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                </div>
+                <p className="text-sm font-medium text-gray-700 mb-1">Click to upload or drag and drop</p>
+                <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+              </>
+            )}
+          </label>
         </div>
 
         <div className="space-y-2">
@@ -98,7 +204,7 @@ export default function DetailsForm() {
             rows={3}
             value={formData.notes}
             onChange={e => setFormData({...formData, notes: e.target.value})}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-gray-50 resize-none" 
+            className="w-full px-4 py-3 rounded-xl border border-black/10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-black/[0.02] backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] resize-none" 
             placeholder="Any specific requests, allergies, or questions?" 
           ></textarea>
         </div>
@@ -118,16 +224,20 @@ export default function DetailsForm() {
           </label>
         </div>
 
-        <div className="flex justify-between items-center border-t border-black/5 pt-8">
-          <button type="button" onClick={() => router.push('/book/date-time')} className="text-gray-500 hover:text-black font-medium text-sm">
+        <div className="flex justify-between items-center pt-8 border-t border-black/5 mt-10">
+          <button type="button" onClick={() => router.back()} className="text-gray-500 font-semibold hover:text-black transition-colors px-4 py-2">
             Back
           </button>
           <button 
-            type="submit"
-            disabled={!agreed || !formData.firstName || !formData.phone}
-            className="bg-[#1A1414] text-white px-8 py-3 rounded-full font-semibold shadow-xl hover:shadow-2xl hover:-translate-y-0.5 hover:bg-black transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+            type="submit" 
+            disabled={!agreed || !formData.firstName || !formData.phone || isSubmitting}
+            className="bg-[#1A1414] text-white px-8 py-3.5 rounded-xl font-bold shadow-xl shadow-black/10 hover:bg-black transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center min-w-[200px]"
           >
-            Review & Pay Deposit
+            {isSubmitting ? (
+              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            ) : (
+              "Confirm & Book"
+            )}
           </button>
         </div>
 

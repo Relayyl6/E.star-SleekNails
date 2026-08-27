@@ -36,7 +36,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-10 ${scrolled || mobileMenuOpen ? 'py-2 md:py-3 bg-[#1A1414]/95 backdrop-blur-xl shadow-lg border-b border-white/10' : 'py-4 md:py-6 bg-transparent'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 md:px-10 ${scrolled ? 'py-2 md:py-3' : 'py-4 md:py-6'} bg-transparent print:hidden`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between relative z-50">
           
           <div className="flex items-center gap-6 md:gap-12 flex-1">

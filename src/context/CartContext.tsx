@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 
 export type CartItem = {
   id: string;
@@ -18,6 +18,8 @@ export type BookingDetails = {
   email: string;
   phone: string;
   notes: string;
+  instagram?: string;
+  bookingRef?: string;
   photoUrl: string | null;
 };
 
@@ -25,11 +27,14 @@ type CartContextType = {
   items: CartItem[];
   bookingDetails: BookingDetails;
   setBookingDetails: React.Dispatch<React.SetStateAction<BookingDetails>>;
-  addItem: (item: CartItem) => void;
+  addItem: (item: CartItem, openSidebar?: boolean) => void;
   updateQuantity: (id: string, delta: number) => void;
   removeItem: (id: string) => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
+  clearCart: () => void;
+  timeLeft: number;
+  startTimer: () => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -70,13 +75,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, bookingDetails, isLoaded]);
 
-  const addItem = (item: CartItem) => {
+  const addItem = (item: CartItem, openSidebar = true) => {
     setItems((prev) => {
       const exists = prev.find((i) => i.id === item.id);
-      if (exists) return prev;
+      if (exists) {
+        // If it exists, let's just increase quantity to match user expectation of "quantity increases"
+        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
       return [...prev, item];
     });
-    setIsOpen(true);
+    if (openSidebar) setIsOpen(true);
   };
 
   const updateQuantity = (id: string, delta: number) => {
@@ -98,8 +106,72 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter(i => i.id !== id));
   };
 
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(1500);
+
+  useEffect(() => {
+    const savedExpiresAt = localStorage.getItem('estar_booking_expires_at');
+    if (savedExpiresAt) {
+      setExpiresAt(parseInt(savedExpiresAt, 10));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!expiresAt) return;
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const diff = Math.floor((expiresAt - now) / 1000);
+      if (diff <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+        // Automatically clear cart when time expires globally
+        clearCart();
+      } else {
+        setTimeLeft(diff);
+      }
+    }, 1000);
+    // Initial check
+    const now = Date.now();
+    const diff = Math.floor((expiresAt - now) / 1000);
+    if (diff <= 0) {
+      setTimeLeft(0);
+      clearCart();
+    } else {
+      setTimeLeft(diff);
+    }
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  const startTimer = useCallback(() => {
+    const savedExpiresAt = localStorage.getItem('estar_booking_expires_at');
+    if (!savedExpiresAt) {
+      const newExpiresAt = Date.now() + 1500 * 1000; // 25 minutes from now
+      setExpiresAt(newExpiresAt);
+      localStorage.setItem('estar_booking_expires_at', newExpiresAt.toString());
+      setTimeLeft(1500);
+    } else {
+      setExpiresAt(parseInt(savedExpiresAt, 10));
+    }
+  }, []);
+
+  const clearCart = () => {
+    setItems([]);
+    setBookingDetails({
+      date: null,
+      time: null,
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      notes: '',
+      photoUrl: null
+    });
+    setExpiresAt(null);
+    localStorage.removeItem('estar_booking_expires_at');
+  };
+
   return (
-    <CartContext.Provider value={{ items, addItem, updateQuantity, removeItem, isOpen, setIsOpen }}>
+    <CartContext.Provider value={{ items, addItem, updateQuantity, removeItem, isOpen, setIsOpen, bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer }}>
       {children}
     </CartContext.Provider>
   );

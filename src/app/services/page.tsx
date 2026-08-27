@@ -167,8 +167,8 @@ export default function ServicesPage() {
         </div>
 
         {/* Filter Pills and Tips Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-10 border-b border-black/5 pb-6 overflow-hidden">
-          <div className="flex overflow-x-auto gap-3 pb-2 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 mb-6 border-b border-black/5 pb-4">
+          <div className="flex overflow-x-auto flex-nowrap lg:flex-wrap gap-2 pb-1 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex-1">
             {CATEGORIES.map(category => (
               <button
                 key={category}
@@ -212,7 +212,7 @@ export default function ServicesPage() {
               <div 
                 key={service.id}
                 onDoubleClick={() => router.push(`/services/${service.id}`)}
-                className={`flex flex-row justify-between rounded-3xl p-5 transition-all duration-300 border bg-white select-none relative gap-4 md:gap-6 ${
+                className={`flex flex-row justify-between rounded-xl p-5 transition-all duration-300 border bg-white select-none relative gap-4 md:gap-6 ${
                   isSelected 
                     ? 'border-primary ring-2 ring-primary ring-offset-2 ring-offset-[#FDFBF9] shadow-[0_0_20px_rgba(232,87,42,0.15)]' 
                     : 'border-transparent hover:border-primary shadow-sm hover:shadow-xl'

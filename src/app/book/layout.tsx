@@ -39,9 +39,9 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
       <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col lg:flex-row gap-10">
         
         {/* Left Side - Main Flow */}
-        <div className="w-full lg:w-2/3">
+        <div className="w-full lg:w-2/3 print:w-full">
           {/* Stepper */}
-          <div className="mb-10 flex items-center justify-between border-b border-black/5 pb-6 overflow-x-auto hide-scrollbar">
+          <div className="mb-10 flex items-center justify-between border-b border-black/5 pb-6 overflow-x-auto hide-scrollbar print:hidden">
             {steps.map((step, idx) => {
               const isActive = pathname === step.path;
               const isPast = steps.findIndex(s => s.path === pathname) > idx;
@@ -64,14 +64,14 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           {/* Flow Content */}
-          <div className="bg-white rounded-[2rem] p-6 md:p-10 shadow-sm border border-black/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-xl p-6 md:p-10 shadow-sm border border-black/5 animate-in fade-in slide-in-from-bottom-4 duration-500 print:shadow-none print:border-none print:p-0 print:m-0">
             {children}
           </div>
         </div>
 
         {/* Right Side - Sticky Cart Summary */}
-        <div className="w-full lg:w-1/3">
-          <div className="sticky top-28 bg-white rounded-[2rem] p-6 md:p-8 shadow-xl border border-black/5">
+        <div className="w-full lg:w-1/3 print:hidden">
+          <div className="sticky top-28 bg-white rounded-xl p-6 md:p-8 shadow-xl border border-black/5">
             <h2 className="font-serif text-2xl text-[#1A1414] mb-6">Booking Summary</h2>
             
             {items.length === 0 ? (

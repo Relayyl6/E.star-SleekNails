@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import BookingDrawer from "@/components/layout/BookingDrawer";
 import { Providers } from "@/components/Providers";
+import { Toaster } from 'sonner';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,12 +40,13 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col relative bg-surface">
         <Providers>
           <Navbar />
-          <main className="flex-1 w-full overflow-x-hidden">
+          <BookingDrawer />
+          <main className="flex-1 flex flex-col">
             {children}
           </main>
           <Footer />
-          <BookingDrawer />
         </Providers>
+        <Toaster position="bottom-right" theme="dark" richColors />
       </body>
     </html>
   );

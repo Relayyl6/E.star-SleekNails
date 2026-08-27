@@ -75,7 +75,7 @@ export default function ServiceDetailsPage({ params }: { params: Promise<{ id: s
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 flex-1">
           {/* Left Column: Visuals */}
           <div className="space-y-6 flex flex-col">
-            <div className="relative w-full flex-1 min-h-[400px] lg:min-h-[500px] rounded-[2rem] overflow-hidden shadow-xl bg-white border border-black/5">
+            <div className="relative w-full flex-1 min-h-[400px] lg:min-h-[500px] rounded-xl overflow-hidden shadow-xl bg-white border border-black/5">
               <Image 
                 src={service.image} 
                 alt={service.name}

@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
 
-export default function VendorSettingsCalendarSyncPage() {
+export default function DashboardPage() {
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -15,9 +15,9 @@ export default function VendorSettingsCalendarSyncPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold">Admin Dashboard (Calendar Sync)</h1>
+      <h1 className="text-2xl font-bold">Customer Dashboard</h1>
       <p className="mt-4 text-gray-600 mb-8">
-        This is the scaffolded page for route: <code>/vendor/settings/calendar-sync</code>
+        Welcome to your dashboard! This is the scaffolded page for route: <code>/dashboard</code>
       </p>
       <button 
         onClick={handleSignOut}
