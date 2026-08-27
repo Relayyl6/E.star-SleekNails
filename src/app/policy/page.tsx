@@ -1,61 +1,104 @@
+'use client';
+import { useState, useEffect } from 'react';
+
 export default function PolicyPage() {
-  const policies = [
-    {
-      id: 1,
-      title: "Deposit & Payment",
-      items: [
-        "A non-refundable ₦10,000 deposit is required to secure your appointment.",
-        "Payment must be completed within 30 mins or your slot will be forfeited."
-      ],
-      icon: <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
-    },
-    {
-      id: 2,
-      title: "Reschedule & Cancellation",
-      items: [
-        "Appointments may be rescheduled with at least 12 hours notice.",
-        "Late cancellations, no-shows or reschedules made within the 12 hour period will result in deposit forfeiture."
-      ],
-      icon: <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
-    },
-    {
-      id: 3,
-      title: "Arrival",
-      items: [
-        "Please arrive on time.",
-        "A 15 min grace period applies after which a ₦5,000 lateness fee applies.",
-        "Arrivals after 20 mins may be rescheduled or cancelled."
-      ],
-      icon: <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
-    },
-    {
-      id: 4,
-      title: "Prep & Add-ons",
-      items: [
-        "Nails must be bare & polish-free (unless soak-off or removal is booked).",
-        "Additional services without prior booking may not be accommodated during your appointment."
-      ],
-      icon: <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>
-    },
-    {
-      id: 5,
-      title: "Health & Safety",
-      items: [
-        "Services cannot be done on nails with infections, wounds, or contagious skin conditions."
-      ],
-      icon: <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
-    },
-    {
-      id: 6,
-      title: "Guests",
-      items: [
-        "Be polite and respectful; disruptive behavior may result in service refusal.",
-        "No children allowed.",
-        "1 extra guest is permitted per appointment."
-      ],
-      icon: <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
-    }
-  ];
+  const [loading, setLoading] = useState(true);
+  const [policyText, setPolicyText] = useState("");
+
+  const DEFAULT_POLICY = `1. Deposit & Payment
+- A non-refundable ₦10,000 deposit is required to secure your appointment.
+- Payment must be completed within 30 mins or your slot will be forfeited.
+
+2. Reschedule & Cancellation
+- Appointments may be rescheduled with at least 12 hours notice.
+- Late cancellations, no-shows or reschedules made within the 12 hour period will result in deposit forfeiture.
+
+3. Arrival
+- Please arrive on time.
+- A 15 min grace period applies after which a ₦5,000 lateness fee applies.
+- Arrivals after 20 mins may be rescheduled or cancelled.
+
+4. Prep & Add-ons
+- Nails must be bare & polish-free (unless soak-off or removal is booked).
+- Additional services without prior booking may not be accommodated.
+
+5. Health & Safety
+- Services cannot be done on nails with infections, wounds, or contagious skin conditions.
+
+6. Guests
+- Be polite and respectful; disruptive behavior may result in service refusal.
+- No children allowed.
+- 1 extra guest is permitted per appointment.`;
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        setPolicyText(data.policyText || DEFAULT_POLICY);
+      })
+      .catch(() => setPolicyText(DEFAULT_POLICY))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const getIconForTitle = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes('deposit') || t.includes('payment')) return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
+    );
+    if (t.includes('reschedule') || t.includes('cancellation') || t.includes('cancel')) return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+    );
+    if (t.includes('arrival') || t.includes('late') || t.includes('time')) return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    );
+    if (t.includes('prep') || t.includes('add-on') || t.includes('add on') || t.includes('nail')) return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" /></svg>
+    );
+    if (t.includes('health') || t.includes('safety') || t.includes('medical') || t.includes('infection')) return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" /></svg>
+    );
+    if (t.includes('guest') || t.includes('children') || t.includes('person') || t.includes('people')) return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+    );
+    // Default fallback
+    return (
+      <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+    );
+  };
+
+  const parsePolicies = (text: string) => {
+    if (!text) return [];
+
+    // Split by double newlines into blocks
+    const blocks = text.split('\n\n').filter(b => b.trim());
+    
+    return blocks.map((block, idx) => {
+      const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+      let title = lines[0] || "Policy";
+      
+      // Remove leading numbers like "1. " or "2. "
+      title = title.replace(/^\d+\.\s*/, '');
+      
+      const items = lines.slice(1).map(item => item.replace(/^- /, ''));
+      
+      return {
+        id: idx + 1,
+        title,
+        items,
+        icon: getIconForTitle(title)
+      };
+    });
+  };
+
+  const parsedPolicies = parsePolicies(policyText);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FBF9F7] pt-32 pb-24 flex justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A1414]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FBF9F7] pt-32 pb-24 relative overflow-hidden">
@@ -73,7 +116,7 @@ export default function PolicyPage() {
 
         {/* Policy Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20 max-w-6xl mx-auto">
-          {policies.map((policy, idx) => (
+          {parsedPolicies.map((policy, idx) => (
             <div 
               key={policy.id} 
               className="bg-white rounded-xl p-6 shadow-sm border border-black/5 hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-8"

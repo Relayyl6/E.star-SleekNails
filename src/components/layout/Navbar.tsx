@@ -5,10 +5,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { auth } from '@/lib/firebase/config';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
   const { items, setIsOpen } = useCart();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
@@ -22,7 +26,22 @@ export default function Navbar() {
     };
     window.addEventListener('scroll', handleScroll);
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        // Check Firebase custom claims (set by our server on login)
+        const tokenResult = await currentUser.getIdTokenResult();
+        setIsAdmin(!!tokenResult.claims.admin);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      unsubscribe();
+    };
   }, []);
 
   if (isHiddenRoute) return null;
@@ -71,13 +90,23 @@ export default function Navbar() {
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 md:gap-4">
-            <Link 
-              href="/login"
-              className={`hidden md:block text-[15px] font-semibold transition-colors px-4 py-2 ${scrolled ? 'text-white hover:text-primary' : 'text-white hover:text-primary drop-shadow-md'}`}
-              style={!scrolled ? { textShadow: '0 2px 4px rgba(0,0,0,0.6)' } : undefined}
-            >
-              Sign in
-            </Link>
+            {user ? (
+              <Link 
+                href={isAdmin ? '/vendor/dashboard' : '/dashboard'}
+                className={`hidden md:block text-[15px] font-semibold transition-colors px-4 py-2 ${scrolled ? 'text-white hover:text-primary' : 'text-white hover:text-primary drop-shadow-md'}`}
+                style={!scrolled ? { textShadow: '0 2px 4px rgba(0,0,0,0.6)' } : undefined}
+              >
+                Profile
+              </Link>
+            ) : (
+              <Link 
+                href="/login"
+                className={`hidden md:block text-[15px] font-semibold transition-colors px-4 py-2 ${scrolled ? 'text-white hover:text-primary' : 'text-white hover:text-primary drop-shadow-md'}`}
+                style={!scrolled ? { textShadow: '0 2px 4px rgba(0,0,0,0.6)' } : undefined}
+              >
+                Sign in
+              </Link>
+            )}
             <button onClick={() => setIsOpen(true)} className="bg-primary text-white text-sm md:text-[15px] px-5 py-2.5 md:px-7 md:py-3 rounded-[1rem] md:rounded-full font-semibold shadow-[0_4px_14px_0_rgba(232,87,42,0.4)] hover:bg-primary/90 transition-all whitespace-nowrap flex items-center gap-2">
               <span>Bookings</span>
               {cartCount > 0 && (

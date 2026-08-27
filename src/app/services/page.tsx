@@ -6,143 +6,59 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { db } from '@/lib/firebase/config';
+import { collection, getDocs } from 'firebase/firestore';
+import { toast } from 'sonner';
+
 const CATEGORIES = ["All", "Full Sets", "In-Fill", "Pedicure", "Nail Art", "Removal", "Add-ons"];
 
-const servicesList = [
-  {
-    id: "signature-full-set",
-    name: "Signature Full Set",
-    category: "Full Sets",
-    duration: "2h",
-    price: "₦20,000",
-    description: "Acrylics, BIAB & hard gel extensions with either French tips, simple accents, swirls, simple ombré. The perfect balance of elegance and detail.",
-    image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "elevated-full-set",
-    name: "Elevated Full Set",
-    category: "Full Sets",
-    duration: "2h",
-    price: "₦25,000",
-    description: "Acrylics, BIAB & hard gel extensions with up to two design elements or 3d art. For those who want their nails to stand out just a bit more.",
-    image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "statement-full-set",
-    name: "Statement Full Set",
-    category: "Full Sets",
-    duration: "2h 30min",
-    price: "₦35,000",
-    description: "Acrylic, BIAB or hard gel extensions with intricate nail art, detailed hand painted designs and multiple layered nail design elements.",
-    image: "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "gel-manicure",
-    name: "Gel Polish Manicure",
-    category: "Full Sets",
-    duration: "1h 15min",
-    price: "₦12,000",
-    description: "Detailed cuticle work and shaping, finished with your choice of solid gel color.",
-    image: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "in-fill",
-    name: "In-Fill / Maintenance",
-    category: "In-Fill",
-    duration: "1h 30min",
-    price: "₦15,000",
-    description: "Rebalancing and filling growth on existing enhancements. Includes one gel color.",
-    image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "nail-art-addons",
-    name: "Nail Art / Add-ons",
-    category: "Nail Art",
-    duration: "15min+",
-    price: "From ₦2,000",
-    description: "Extra length, intricate character art, chrome powders, or rhinestones added to any service.",
-    image: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "biab-overlay",
-    name: "BIAB Natural Overlay",
-    category: "Full Sets",
-    duration: "1h 30min",
-    price: "₦18,000",
-    description: "Builder in a bottle applied over natural nails to add strength and promote growth.",
-    image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "classic-pedicure",
-    name: "Classic Pedicure",
-    category: "Pedicure",
-    duration: "1h",
-    price: "₦15,000",
-    description: "Relaxing foot soak, cuticle care, callus removal, scrub, massage and polish.",
-    image: "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "jelly-pedicure",
-    name: "Luxury Jelly Pedicure",
-    category: "Pedicure",
-    duration: "1h 30min",
-    price: "₦25,000",
-    description: "Premium pedicure featuring a warm jelly soak, deep exfoliation, and hot towel wrap.",
-    image: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "acrylic-toes",
-    name: "Acrylic Toes",
-    category: "Pedicure",
-    duration: "1h",
-    price: "₦12,000",
-    description: "Acrylic overlay applied to all toes for a perfect, long-lasting square shape.",
-    image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "sculpted-extensions",
-    name: "Sculpted Extensions",
-    category: "Full Sets",
-    duration: "2h 30min",
-    price: "₦30,000",
-    description: "Extensions created using forms rather than tips for a more natural curve and structure.",
-    image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "soak-off",
-    name: "Professional Soak Off",
-    category: "Removal",
-    duration: "45min",
-    price: "₦5,000",
-    description: "Safe and healthy removal of previous enhancements to preserve natural nail integrity.",
-    image: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "french-tips",
-    name: "Classic French Tips",
-    category: "Nail Art",
-    duration: "1h 45min",
-    price: "₦22,000",
-    description: "Timeless pink and white acrylic or gel application for a clean, classic look.",
-    image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "repair",
-    name: "Nail Repair",
-    category: "Add-ons",
-    duration: "15min",
-    price: "₦2,500",
-    description: "Fixing a broken, chipped, or cracked nail enhancement.",
-    image: "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=400&q=80"
-  }
-];
-
 export default function ServicesPage() {
-  const { items, addItem, updateQuantity, removeItem } = useCart();
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [activeCategory, setActiveCategory] = useState("All");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [servicesList, setServicesList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { items, addItem, updateQuantity, removeItem } = useCart();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      // 1. Load from cache immediately
+      const cached = localStorage.getItem('sleeknails_services');
+      if (cached) {
+        try {
+          const rawData = JSON.parse(cached);
+          setServicesList(rawData.map((s: any) => ({ ...s, category: s.category || "Full Sets" })));
+          setLoading(false);
+        } catch (e) {}
+      }
+
+      // 2. Fetch fresh data in background
+      try {
+        const res = await fetch('/api/services');
+        if (!res.ok) {
+          if (!cached) toast.error('Failed to fetch services');
+          setLoading(false);
+          return;
+        }
+        const rawData = await res.json();
+        
+        const data = rawData.map((service: any) => ({
+          ...service,
+          category: service.category || "Full Sets"
+        }));
+        setServicesList(data);
+        localStorage.setItem('sleeknails_services', JSON.stringify(rawData));
+      } catch (error) {
+        console.error("Error fetching services:", error);
+        if (!cached) toast.error('An error occurred while fetching services.');
+      }
+      setLoading(false);
+    };
+    fetchServices();
+  }, []);
 
   useEffect(() => {
     const categoryParam = searchParams.get('category');
@@ -189,8 +105,13 @@ export default function ServicesPage() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
-          {filteredServices.map((service) => {
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A1414]"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
+            {filteredServices.map((service) => {
             const cartItem = items.find(i => i.id === service.id);
             const isSelected = !!cartItem;
             const quantity = cartItem?.quantity || 0;
@@ -223,7 +144,7 @@ export default function ServicesPage() {
                   <h3 className="font-serif text-xl text-[#1A1414] mb-1 truncate">{service.name}</h3>
                   <p className="text-sm font-medium text-gray-500 mb-2">{service.price} · {service.duration}</p>
                   <p className="text-[13px] text-gray-600 leading-relaxed line-clamp-3 mb-2">
-                    {service.description}
+                    {service.description || service.desc}
                   </p>
                   
                   <Link 
@@ -265,11 +186,10 @@ export default function ServicesPage() {
                     onPointerUp={handlePointerUp}
                     onPointerLeave={handlePointerUp}
                   >
-                    <Image 
-                      src={service.image} 
+                    <img 
+                      src={service.images?.[0] || service.image || ''} 
                       alt={service.name} 
-                      fill 
-                      className="object-cover"
+                      className="object-cover w-full h-full"
                       draggable={false}
                     />
                     {isSelected && (
@@ -283,6 +203,7 @@ export default function ServicesPage() {
             );
           })}
         </div>
+        )}
         
         {filteredServices.length === 0 && (
           <div className="text-center py-20 text-gray-500">

@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!getApps().length) {
@@ -13,6 +14,7 @@ if (!getApps().length) {
           // Handle newline characters in the private key from env variables
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
         }),
+        storageBucket: 'ester-ec20e.appspot.com'
       });
       console.log('Firebase Admin initialized successfully');
     } else {
@@ -26,3 +28,4 @@ if (!getApps().length) {
 // Export getters instead of values to prevent immediate crash if app isn't initialized
 export const getAdminDb = () => getFirestore();
 export const getAdminAuth = () => getAuth();
+export const getAdminStorage = () => getStorage();

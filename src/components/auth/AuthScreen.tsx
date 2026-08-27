@@ -40,6 +40,32 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const getReadableError = (err: any) => {
+    const msg = err.message || '';
+    if (msg.includes('auth/invalid-credential') || msg.includes('auth/wrong-password') || msg.includes('auth/user-not-found')) {
+      return "Incorrect email or password. Please try again.";
+    }
+    if (msg.includes('auth/email-already-in-use')) {
+      return "An account with this email already exists.";
+    }
+    if (msg.includes('auth/weak-password')) {
+      return "Password is too weak. Please use a stronger password.";
+    }
+    if (msg.includes('auth/invalid-email')) {
+      return "Please enter a valid email address.";
+    }
+    if (msg.includes('auth/network-request-failed')) {
+      return "Network error. Please check your connection.";
+    }
+    if (msg.includes('auth/too-many-requests')) {
+      return "Too many failed attempts. Please try again later.";
+    }
+    if (msg.includes('auth/popup-closed-by-user')) {
+      return "Google sign-in was cancelled.";
+    }
+    return "An unexpected error occurred. Please try again.";
+  };
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -68,7 +94,7 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
       if (res.ok) {
         const data = await res.json();
         if (data.role === 'ADMIN') {
-          router.push('/vendor/settings/calendar-sync');
+          router.push('/vendor/dashboard');
         } else {
           router.push('/dashboard');
         }
@@ -79,7 +105,7 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "An error occurred");
+      toast.error(getReadableError(err));
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +127,7 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
       if (res.ok) {
         const data = await res.json();
         if (data.role === 'ADMIN') {
-          router.push('/vendor/settings/calendar-sync');
+          router.push('/vendor/dashboard');
         } else {
           router.push('/dashboard');
         }
@@ -112,7 +138,7 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "An error occurred during Google Sign In");
+      toast.error(getReadableError(err));
     } finally {
       setIsLoading(false);
     }

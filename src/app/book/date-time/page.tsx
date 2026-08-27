@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { db } from '@/lib/firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function DateTimeSelection() {
   const router = useRouter();
@@ -21,8 +23,46 @@ export default function DateTimeSelection() {
   
   const [allBookings, setAllBookings] = useState<Record<string, string[]>>({});
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+  
+  const [storeHours, setStoreHours] = useState<any[]>([]);
+  const [isHoursLoaded, setIsHoursLoaded] = useState(false);
 
-  const allSlots = ["09:00 AM", "12:00 PM", "03:00 PM", "05:00 PM"];
+  // Helper to get day name from date (e.g., 'monday')
+  const getDayName = (date: Date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  };
+
+  // Fixed appointment slots — filter to only those within open/close hours
+  const FIXED_SLOT_HOURS = [9, 12, 15, 17]; // 9:00 AM, 12:00 PM, 3:00 PM, 5:00 PM
+  const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+  const generateSlotsForDate = (date: Date) => {
+    if (!isHoursLoaded || storeHours.length === 0) return [];
+    
+    const dayName = getDayName(date);
+    const daySettings = storeHours.find(h => h.day === dayName);
+    
+    if (!daySettings || daySettings.isClosed) return [];
+    
+    const [openH] = daySettings.open.split(':').map(Number);
+    const [closeH] = daySettings.close.split(':').map(Number);
+
+    const toSlot = (h: number) => {
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+      return `${displayH.toString().padStart(2, '0')}:00 ${ampm}`;
+    };
+
+    // If close is before or equal to open (e.g. accidentally set to 3AM instead of 3PM),
+    // still show all fixed slots from open time rather than blanking the whole day
+    if (closeH <= openH) {
+      return FIXED_SLOT_HOURS.filter(h => h >= openH).map(toSlot);
+    }
+    
+    return FIXED_SLOT_HOURS.filter(h => h >= openH && h < closeH).map(toSlot);
+  };
+
+  const allSlots = selectedDate ? generateSlotsForDate(selectedDate) : [];
 
   useEffect(() => {
     startTimer();
@@ -34,6 +74,7 @@ export default function DateTimeSelection() {
     }
   }, [timeLeft, router]);
 
+  // Fetch all bookings for availability checking
   useEffect(() => {
     fetch('/api/bookings', { cache: 'no-store' })
       .then(res => res.json())
@@ -44,6 +85,42 @@ export default function DateTimeSelection() {
       })
       .catch(err => console.error("Failed to fetch all bookings", err))
       .finally(() => setIsLoadingBookings(false));
+  }, []);
+
+  // Fetch store operating hours for dynamic slot generation
+  useEffect(() => {
+    const fetchHours = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.hours) {
+            // Firebase may convert arrays to objects with numeric keys — convert back and sort by day order
+            const raw = Array.isArray(data.hours) ? data.hours : Object.values(data.hours);
+            const sorted = [...(raw as any[])].sort(
+              (a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)
+            );
+            setStoreHours(sorted);
+          } else {
+            // Fallback default hours if not yet saved by vendor
+            setStoreHours([
+              { day: 'monday', open: '09:00', close: '18:00', isClosed: false },
+              { day: 'tuesday', open: '09:00', close: '18:00', isClosed: false },
+              { day: 'wednesday', open: '09:00', close: '18:00', isClosed: false },
+              { day: 'thursday', open: '09:00', close: '18:00', isClosed: false },
+              { day: 'friday', open: '09:00', close: '19:00', isClosed: false },
+              { day: 'saturday', open: '09:00', close: '19:00', isClosed: false },
+              { day: 'sunday', open: '12:00', close: '17:00', isClosed: true },
+            ]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch store hours", err);
+      } finally {
+        setIsHoursLoaded(true);
+      }
+    };
+    fetchHours();
   }, []);
 
   const bookedSlots = selectedDate ? (allBookings[selectedDate.toISOString()] || []) : [];
@@ -126,11 +203,14 @@ export default function DateTimeSelection() {
       const isPast = date < today;
       const isSelected = selectedDate?.toDateString() === date.toDateString();
       
+      const slotsForThisDay = generateSlotsForDate(date);
+      const isClosed = isHoursLoaded && slotsForThisDay.length === 0;
+      
       const dayBookings = allBookings[dateStr] || [];
-      const isFullyBooked = dayBookings.length >= allSlots.length;
+      const isFullyBooked = !isClosed && dayBookings.length >= slotsForThisDay.length;
       const hasSomeBookings = dayBookings.length > 0 && !isFullyBooked;
       
-      const isDisabled = isPast || isFullyBooked;
+      const isDisabled = isPast || isClosed || isFullyBooked;
 
       days.push(
         <div 

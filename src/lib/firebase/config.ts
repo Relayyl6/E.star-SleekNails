@@ -1,12 +1,13 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB27UcbxtvovOciJDIlOXBAWCTfQtOm038",
   authDomain: "ester-ec20e.firebaseapp.com",
   projectId: "ester-ec20e",
-  storageBucket: "ester-ec20e.firebasestorage.app",
+  storageBucket: "ester-ec20e.appspot.com",
   messagingSenderId: "880267816480",
   appId: "1:880267816480:web:f7b86534fd4e2d94d75645",
   measurementId: "G-90N7R5EBQX"
@@ -17,4 +18,5 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export default app;

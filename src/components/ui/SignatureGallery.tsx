@@ -1,22 +1,65 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 
 export default function SignatureGallery() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [todayHours, setTodayHours] = useState<string>("9:00–5:00");
 
   useEffect(() => {
-    const checkOpen = () => {
-      const now = new Date();
-      const hour = now.getHours();
-      setIsOpen(hour >= 9 && hour < 17);
+    let timer: NodeJS.Timeout;
+    
+    const fetchHours = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.hours) {
+            const hoursArray = Array.isArray(data.hours) ? data.hours : Object.values(data.hours);
+            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+            const todaySettings = hoursArray.find((h: any) => h.day === todayName);
+            
+            const checkOpen = () => {
+              if (!todaySettings || todaySettings.isClosed) {
+                setIsOpen(false);
+                setTodayHours("Closed Today");
+                return;
+              }
+              
+              const now = new Date();
+              const currentH = now.getHours();
+              const currentM = now.getMinutes();
+              const currentTotalM = currentH * 60 + currentM;
+              
+              const [openH, openM] = todaySettings.open.split(':').map(Number);
+              const [closeH, closeM] = todaySettings.close.split(':').map(Number);
+              const openTotalM = openH * 60 + openM;
+              const closeTotalM = closeH * 60 + closeM;
+              
+              setIsOpen(currentTotalM >= openTotalM && currentTotalM < closeTotalM);
+              
+              // Format for display
+              const formatTime = (h: number, m: number) => {
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+                return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
+              };
+              setTodayHours(`${formatTime(openH, openM)} - ${formatTime(closeH, closeM)}`);
+            };
+            
+            checkOpen();
+            timer = setInterval(checkOpen, 60000);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load hours for gallery", err);
+      }
     };
-    checkOpen();
-    const timer = setInterval(checkOpen, 60000);
-    return () => clearInterval(timer);
+    
+    fetchHours();
+    return () => { if (timer) clearInterval(timer); };
   }, []);
 
   const images = [
@@ -57,11 +100,10 @@ export default function SignatureGallery() {
 
       {/* Dynamic Blurred Background Morphing */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <Image 
-          src="https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=1200&q=80" 
-          alt="Nail Background" 
-          fill 
-          className="object-cover opacity-60 blur-3xl scale-150 animate-pulse duration-[12000ms]"
+        <img
+          src="https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=1200&q=80"
+          alt="Nail Background"
+          className="w-full h-full object-cover opacity-60 blur-3xl scale-150 animate-pulse duration-[12000ms] absolute inset-0"
         />
         <div className="absolute inset-0 bg-[#1A1414]/70 mix-blend-multiply"></div>
         {/* Seamless Fade into Footer */}
@@ -74,25 +116,25 @@ export default function SignatureGallery() {
           
           {/* Tile 1 - Large Square (2x2) */}
           <div onClick={() => setSelectedImage(images[0])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-2xl col-span-2 row-span-2">
-            <Image src={images[0]} alt="Nail Art 1" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[0]} alt="Nail Art 1" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           {/* Tile 2 - Small (1x1) */}
           <div onClick={() => setSelectedImage(images[1])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-xl col-span-1 row-span-1">
-            <Image src={images[1]} alt="Nail Art 2" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[1]} alt="Nail Art 2" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           {/* Tile 3 - Tall (1x2) */}
           <div onClick={() => setSelectedImage(images[2])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-xl col-span-1 row-span-2">
-            <Image src={images[2]} alt="Nail Art 3" fill sizes="25vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[2]} alt="Nail Art 3" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           {/* Tile 4 - Small (1x1) */}
           <div onClick={() => setSelectedImage(images[3])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-xl col-span-1 row-span-1">
-            <Image src={images[3]} alt="Nail Art 4" fill sizes="25vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[3]} alt="Nail Art 4" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
@@ -109,19 +151,19 @@ export default function SignatureGallery() {
 
           {/* Tile 5 - Wide (2x1) */}
           <div onClick={() => setSelectedImage(images[4])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-xl col-span-2 row-span-1">
-            <Image src={images[4]} alt="Nail Art 5" fill sizes="50vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[4]} alt="Nail Art 5" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           {/* Tile 6 - Small (1x1) */}
           <div onClick={() => setSelectedImage(images[5])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-xl col-span-1 row-span-1">
-            <Image src={images[5]} alt="Nail Art 6" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[5]} alt="Nail Art 6" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           {/* Tile 7 - Small (1x1) */}
           <div onClick={() => setSelectedImage(images[6])} className="group relative rounded-2xl overflow-hidden cursor-zoom-in shadow-xl col-span-1 row-span-1">
-            <Image src={images[6]} alt="Nail Art 7" fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+            <img src={images[6]} alt="Nail Art 7" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
@@ -160,7 +202,7 @@ export default function SignatureGallery() {
               <span className={`relative inline-flex rounded-full h-3 w-3 ${isOpen ? 'bg-green-500' : 'bg-red-500'}`}></span>
             </span>
             <span className="font-medium text-white/90 tracking-wide text-sm md:text-base">
-              {isOpen ? 'Open now' : 'Closed'} · 9:00–5:00
+              {isOpen ? 'Open now' : 'Closed'} {todayHours !== 'Closed Today' && `· ${todayHours}`}
             </span>
           </div>
           <a href="https://maps.google.com/?q=Estar+Sleek+Nails" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-white transition-colors inline-flex items-center gap-1 group text-sm md:text-base">

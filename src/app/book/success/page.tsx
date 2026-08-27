@@ -6,18 +6,36 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function SuccessPage() {
-  const { items, bookingDetails, setIsOpen } = useCart();
+  const { items, bookingDetails, setIsOpen, clearCart } = useCart();
   const [mounted, setMounted] = useState(false);
+  const [depositPercentage, setDepositPercentage] = useState(30);
+  
+  // Take a snapshot so we can clear the cart but still show the invoice!
+  const [snapshotItems] = useState(items);
+  const [snapshotDetails] = useState(bookingDetails);
 
-  const total = items.reduce((sum, item) => {
+  const total = snapshotItems.reduce((sum, item) => {
     const priceNum = parseInt(item.price.replace(/[^\d]/g, ''));
     return sum + (priceNum * (item.quantity || 1));
   }, 0);
 
+  const depositAmount = Math.round(total * depositPercentage / 100);
+
   useEffect(() => {
     setMounted(true);
     setIsOpen(false);
-  }, [setIsOpen]);
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.depositPercentage != null) setDepositPercentage(data.depositPercentage);
+      })
+      .catch(() => {});
+    
+    // Clear the global cart so the next booking is fresh
+    if (items.length > 0) {
+      setTimeout(() => clearCart(), 100);
+    }
+  }, [setIsOpen, clearCart, items.length]);
 
   if (!mounted) return null;
 
@@ -25,10 +43,10 @@ export default function SuccessPage() {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount).replace('NGN', '₦');
   };
 
-  const dateObj = bookingDetails.date ? new Date(bookingDetails.date) : new Date();
+  const dateObj = snapshotDetails.date ? new Date(snapshotDetails.date) : new Date();
   
   // We passed the booking ref forward from the details page!
-  const bookingRef = bookingDetails.bookingRef || "N/A";
+  const bookingRef = snapshotDetails.bookingRef || "N/A";
 
   return (
     <div className="flex flex-col items-center max-w-4xl mx-auto pb-20">
@@ -62,14 +80,14 @@ export default function SuccessPage() {
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div className="min-w-0 pr-4">
               <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Billed To</p>
-              <p className="font-medium text-gray-800 truncate">{bookingDetails.firstName} {bookingDetails.lastName}</p>
-              <p className="text-sm text-gray-500 break-all">{bookingDetails.email}</p>
-              <p className="text-sm text-gray-500">{bookingDetails.phone}</p>
+              <p className="font-medium text-gray-800 truncate">{snapshotDetails.firstName} {snapshotDetails.lastName}</p>
+              <p className="text-sm text-gray-500 break-all">{snapshotDetails.email}</p>
+              <p className="text-sm text-gray-500">{snapshotDetails.phone}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-semibold uppercase mb-2">Appointment Details</p>
               <p className="font-medium text-gray-800">{dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</p>
-              <p className="text-sm text-gray-500">{bookingDetails.time}</p>
+              <p className="text-sm text-gray-500">{snapshotDetails.time}</p>
             </div>
           </div>
 
@@ -81,7 +99,7 @@ export default function SuccessPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {items.map((item, idx) => (
+              {snapshotItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="py-4">
                     <p className="font-medium text-gray-800 text-sm">{item.name}</p>
@@ -95,11 +113,11 @@ export default function SuccessPage() {
             </tbody>
           </table>
 
-          {bookingDetails.photoUrl && (
+          {snapshotDetails.photoUrl && (
             <div className="mb-8">
                <p className="text-xs text-gray-400 font-semibold uppercase mb-3">Attached Inspiration</p>
-               <div className="w-24 h-24 relative rounded-lg overflow-hidden border border-gray-200">
-                  <Image src={bookingDetails.photoUrl} alt="Inspo" fill className="object-cover" />
+               <div className="w-24 h-24 relative rounded-xl overflow-hidden border border-gray-200 shadow-sm mt-3">
+                  <img src={snapshotDetails.photoUrl} alt="Inspo" className="w-full h-full object-cover" />
                </div>
             </div>
           )}
@@ -119,7 +137,7 @@ export default function SuccessPage() {
 
           <div className="border-t border-gray-100 pt-6 mt-6">
             <p className="text-xs text-gray-500 font-medium mb-1">To permanently secure this booking, a deposit is required.</p>
-            <p className="text-[11px] text-gray-400">Please transfer <strong className="text-gray-700">₦10,000</strong> to GTBank: <strong className="text-gray-700">0123456789</strong> (Account: E.star SleekNails) and send the receipt to our WhatsApp.</p>
+            <p className="text-[11px] text-gray-400">Please transfer <strong className="text-gray-700">{formatMoney(depositAmount)} ({depositPercentage}%)</strong> to GTBank: <strong className="text-gray-700">0123456789</strong> (Account: E.star SleekNails) and send the receipt to our WhatsApp.</p>
           </div>
         </div>
 
@@ -142,7 +160,7 @@ export default function SuccessPage() {
           </div>
 
           <a 
-            href={`https://wa.me/2347049022919?text=${encodeURIComponent(`Hi! I just booked an appointment on E.star SleekNails.\n\nBooking Ref: ${bookingRef}\nDeposit: ₦10,000\n\nI am attaching my payment receipt below. 💅✨`)}`} 
+            href={`https://wa.me/2347049022919?text=${encodeURIComponent(`Hi! I just booked an appointment on E.star SleekNails.\n\nBooking Ref: ${bookingRef}\nDeposit: ${formatMoney(depositAmount)} (${depositPercentage}% of ${formatMoney(total)})\n\nI am attaching my payment receipt below. 💅✨`)}`} 
             target="_blank" 
             rel="noreferrer" 
             className="w-full mt-4 flex items-center justify-center gap-3 bg-green-50 text-green-700 py-3 rounded-xl font-bold hover:bg-green-100 transition-all border border-green-200"

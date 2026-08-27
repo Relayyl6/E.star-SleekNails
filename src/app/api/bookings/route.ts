@@ -8,7 +8,21 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get('date');
+    const type = searchParams.get('type');
     const db = getAdminDb();
+    
+    if (type === 'full') {
+      const email = searchParams.get('email');
+      let snapshot;
+      if (email) {
+        snapshot = await db.collection('bookings').where('customerEmail', '==', email).get();
+      } else {
+        snapshot = await db.collection('bookings').get();
+      }
+      
+      const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return NextResponse.json(bookings, { status: 200 });
+    }
     
     if (dateParam) {
       // Fetch for specific date
@@ -84,7 +98,7 @@ export async function POST(request: Request) {
       items,
       total,
       photoUrl: photoUrl || null,
-      status: 'CONFIRMED',
+      status: 'PENDING',
       createdAt: new Date().toISOString()
     });
 
@@ -212,22 +226,12 @@ export async function POST(request: Request) {
               ${instagram ? `<p><strong>Instagram:</strong> @${instagram}</p>` : ''}
               <p><strong>Date/Time:</strong> ${new Date(date).toLocaleDateString()} @ ${time}</p>
               ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-              ${photoUrl ? `<p><strong>Inspiration Photo:</strong> Included as an attachment to this email.</p>` : ''}
+              ${photoUrl ? `<p><strong>Inspiration Photo:</strong></p><img src="${photoUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" />` : ''}
               ${itemsHtml}
             </div>
           </div>
         `
       };
-
-      if (photoUrl && photoUrl.includes('base64,')) {
-        const base64Data = photoUrl.split('base64,')[1];
-        adminEmailPayload.attachments = [
-          {
-            filename: 'inspiration-photo.png',
-            content: base64Data
-          }
-        ];
-      }
 
       await resend.emails.send(adminEmailPayload);
     }
@@ -236,5 +240,22 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('POST /api/bookings Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const db = getAdminDb();
+    const body = await request.json();
+    const { id, status } = body;
+    
+    if (!id || !status) {
+      return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
+    }
+    
+    await db.collection('bookings').doc(id).update({ status });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

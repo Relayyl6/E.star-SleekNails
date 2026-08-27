@@ -41,8 +41,12 @@ export default function BookingDrawer() {
           ) : (
             items.map((item) => (
               <div key={item.id} className="bg-white/5 rounded-2xl p-4 border border-white/10 flex gap-4">
-                <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10">
-                  <Image src={item.image} alt={item.name} fill className="object-cover" />
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10 bg-white/5 flex items-center justify-center">
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white/40 text-lg font-bold font-serif">{item.name.charAt(0)}</span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-1">

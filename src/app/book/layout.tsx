@@ -11,15 +11,27 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [depositPercentage, setDepositPercentage] = useState(30); // default 30%
 
   useEffect(() => {
     setMounted(true);
+
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.depositPercentage != null) {
+          setDepositPercentage(data.depositPercentage);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const total = items.reduce((sum, item) => {
     const priceNum = parseInt(item.price.replace(/[^\d]/g, ''));
     return sum + (priceNum * item.quantity);
   }, 0);
+
+  const depositAmount = Math.round(total * depositPercentage / 100);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount).replace('NGN', '₦');
@@ -84,8 +96,12 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                 <div className="space-y-4 mb-6 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-4 items-center group">
-                      <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
+                      <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 flex items-center justify-center">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-gray-400 text-lg font-bold font-serif">{item.name.charAt(0)}</span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-[#1A1414] truncate">{item.name}</p>
@@ -107,8 +123,8 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                     <span>{formatMoney(total)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Deposit Required</span>
-                    <span>₦10,000</span>
+                    <span>Deposit Required ({depositPercentage}%)</span>
+                    <span>{formatMoney(depositAmount)}</span>
                   </div>
                   <div className="flex justify-between text-xl font-bold text-[#1A1414] pt-3 border-t border-black/5">
                     <span>Total Estimated</span>

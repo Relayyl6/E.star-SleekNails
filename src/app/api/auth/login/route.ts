@@ -3,8 +3,9 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 
 // The emails that are granted ADMIN access
 const ADMIN_EMAILS = [
-  'oseghaleleonard39@gmail.com', // Replace with your dev email
-  'owner@example.com' // Replace with the brand owner's email
+  'oseghaleleonard39@gmail.com',
+  'relayamin12@gmail.com',
+  'owner@example.com'
 ];
 
 export async function POST(request: Request) {

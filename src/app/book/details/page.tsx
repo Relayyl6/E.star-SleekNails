@@ -4,12 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { auth } from '@/lib/firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function DetailsForm() {
   const router = useRouter();
   const { items, bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer } = useCart();
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     startTimer();
@@ -21,12 +25,25 @@ export default function DetailsForm() {
     }
   }, [timeLeft, router]);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const token = await user.getIdTokenResult();
+        setIsAdmin(!!token.claims.admin);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: bookingDetails.firstName || '',
     lastName: bookingDetails.lastName || '',
@@ -36,26 +53,48 @@ export default function DetailsForm() {
     notes: bookingDetails.notes || ''
   });
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Create a local URL for the preview immediately
-      const url = URL.createObjectURL(file);
+      const tempUrl = URL.createObjectURL(file);
+      setBookingDetails(prev => ({ ...prev, photoUrl: tempUrl }));
       
-      // Also convert to base64 for persistent storage in the context if needed
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        // Update context immediately so it persists across navigation
-        setBookingDetails(prev => ({ ...prev, photoUrl: base64String }));
-      };
+      setIsUploading(true);
+      const uploadData = new FormData();
+      uploadData.append('file', file);
       
-      reader.readAsDataURL(file);
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          // Update context with the real URL
+          setBookingDetails(prev => ({ ...prev, photoUrl: data.url }));
+        } else {
+          toast.error("Failed to upload image. Please try again.");
+          setBookingDetails(prev => ({ ...prev, photoUrl: null }));
+        }
+      } catch (error) {
+        console.error("Upload failed", error);
+        toast.error("Failed to upload image. Please try again.");
+        setBookingDetails(prev => ({ ...prev, photoUrl: null }));
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isAdmin) {
+      toast.error("You're an admin, remember? You want to book yourself? 🤨");
+      return; // Stops the function so no API call is made
+    }
+
     if (agreed && formData.firstName && formData.phone) {
       setIsSubmitting(true);
 
@@ -67,6 +106,11 @@ export default function DetailsForm() {
       const bookingRef = "ESN-" + Math.random().toString(36).substr(2, 6).toUpperCase();
 
       try {
+        // Prevent any lingering base64 strings from old localStorage state
+        const safePhotoUrl = bookingDetails.photoUrl && bookingDetails.photoUrl.startsWith('data:image') 
+          ? null 
+          : (bookingDetails.photoUrl || null);
+
         const res = await fetch('/api/bookings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -77,7 +121,7 @@ export default function DetailsForm() {
             items,
             total,
             ref: bookingRef,
-            photoUrl: bookingDetails.photoUrl || null
+            photoUrl: safePhotoUrl
           })
         });
 
@@ -90,7 +134,9 @@ export default function DetailsForm() {
         }
 
         if (!data.success) {
-          throw new Error(data.error || "Failed to book");
+          toast.error(data.error || "Failed to book");
+          setIsSubmitting(false);
+          return;
         }
 
         setBookingDetails(prev => ({
@@ -230,13 +276,13 @@ export default function DetailsForm() {
           </button>
           <button 
             type="submit" 
-            disabled={!agreed || !formData.firstName || !formData.phone || isSubmitting}
+            disabled={!agreed || !formData.firstName || !formData.phone || isSubmitting || isUploading}
             className="bg-[#1A1414] text-white px-8 py-3.5 rounded-xl font-bold shadow-xl shadow-black/10 hover:bg-black transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center min-w-[200px]"
           >
             {isSubmitting ? (
               <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             ) : (
-              "Confirm & Book"
+              isUploading ? "Uploading Image..." : "Confirm & Book"
             )}
           </button>
         </div>
