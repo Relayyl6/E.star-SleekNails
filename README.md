@@ -28,3 +28,22 @@ This platform features an interactive service menu, automated PDF invoicing and 
 3. Configure your `.env.local` with Firebase and Resend API keys.
 4. Run the development server: `npm run dev`
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Showcase
+
+Here is a glimpse of the E.star SleekNails platform in action:
+
+### Storefront Gallery
+![Storefront Gallery](./screenshots/gallery.png)
+
+### Studio Policies
+![Studio Policies](./screenshots/policies.png)
+
+### Footer & Navigation
+![Footer](./screenshots/footer.png)
+
+### Admin Dashboard
+![Admin Dashboard](./screenshots/admin-dashboard.png)
+
+### Booking Details Management
+![Booking Details Management](./screenshots/admin-booking-details.png)
