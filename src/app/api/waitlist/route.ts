@@ -56,3 +56,29 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const email = searchParams.get('email');
+    
+    const adminDb = getAdminDb();
+    let snapshot;
+    
+    if (email) {
+      snapshot = await adminDb.collection('waitlist').where('email', '==', email).get();
+    } else {
+      snapshot = await adminDb.collection('waitlist').get();
+    }
+      
+    const waitlists = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      status: 'WAITLIST'
+    }));
+    
+    return NextResponse.json(waitlists, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

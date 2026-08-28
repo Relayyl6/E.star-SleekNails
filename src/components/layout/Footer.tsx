@@ -3,9 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useSettings, formatGroupedHours } from '@/context/SettingsContext';
 
 export default function Footer() {
   const pathname = usePathname();
+  const { settings } = useSettings();
+  const groupedHours = formatGroupedHours(settings.hours);
   const normalizedPath = pathname.toLowerCase();
   const isHiddenRoute = normalizedPath.startsWith('/login') || normalizedPath.startsWith('/register') || normalizedPath.startsWith('/dashboard') || normalizedPath.startsWith('/vendor') || normalizedPath.startsWith('/profile');
 
@@ -18,14 +21,14 @@ export default function Footer() {
           <div className="bg-white p-3 rounded-2xl shrink-0">
             <Image 
               src="/logo.png" 
-              alt="E.star SleekNails Logo" 
+              alt={settings.name} 
               width={120} 
               height={40} 
               className="object-contain"
             />
           </div>
           <p className="text-white/70 text-xs md:text-sm max-w-xs leading-relaxed">
-            Specializing in acrylic, hardgel, and BIAB services, creating clean, detailed, and long-lasting nail sets.
+            {settings.bio}
           </p>
         </div>
         
@@ -42,18 +45,20 @@ export default function Footer() {
         <div>
           <h4 className="font-medium mb-4 text-surface">Hours</h4>
           <ul className="space-y-2 text-sm text-white/70">
-            <li className="flex justify-between"><span className="w-24">Mon - Fri:</span> <span>7:00 AM - 6:00 PM</span></li>
-            <li className="flex justify-between"><span className="w-24">Saturday:</span> <span>9:00 AM - 5:00 PM</span></li>
-            <li className="flex justify-between"><span className="w-24">Sunday:</span> <span>Closed</span></li>
+            {groupedHours.map((hour, idx) => (
+              <li key={idx} className="flex justify-between">
+                <span className="w-24 capitalize">{hour.label}:</span> 
+                <span>{hour.value}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
       
       <div className="max-w-7xl mx-auto w-full mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50 mb-8 px-6 md:px-12">
-        <p>© {new Date().getFullYear()} E.star SleekNails. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} {settings.name}. All rights reserved.</p>
         <div className="flex items-center gap-4">
-          <a href="#" className="hover:text-white transition-colors">Instagram</a>
-          <a href="#" className="hover:text-white transition-colors">TikTok</a>
+          <a href={`https://instagram.com/${settings.instagram?.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
         </div>
       </div>
 

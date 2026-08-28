@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getAdminStorage } from '@/lib/firebase/admin';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
 export async function POST(req: Request) {
   try {
@@ -10,26 +11,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Forward the file to a free anonymous image host (catbox.moe) 
-    // since Firebase Storage requires a paid plan
-    const catboxData = new FormData();
-    catboxData.append('reqtype', 'fileupload');
-    catboxData.append('fileToUpload', file);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    const catboxRes = await fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: catboxData
-    });
+    // Save to public/uploads directory
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const filename = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    const savedName = `${uniqueSuffix}-${filename}`;
+    
+    const path = join(process.cwd(), 'public', 'uploads', savedName);
+    
+    await writeFile(path, buffer);
 
-    if (!catboxRes.ok) {
-      throw new Error(`Image host error: ${catboxRes.statusText}`);
-    }
-
-    const url = await catboxRes.text();
-
-    return NextResponse.json({ url });
+    // Return the local URL
+    return NextResponse.json({ url: `/uploads/${savedName}` });
   } catch (error) {
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Failed to upload' }, { status: 500 });
   }
 }
+

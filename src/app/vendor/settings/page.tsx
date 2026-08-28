@@ -17,6 +17,7 @@ export default function VendorSettingsPage() {
     heroImage: '',
     depositPercentage: 30,
     adminEmail: '',
+    bankDetails: 'GTBank\n0123456789\nE.star SleekNails',
     hours: [
       { day: 'monday', open: '09:00', close: '18:00', isClosed: false },
       { day: 'tuesday', open: '09:00', close: '18:00', isClosed: false },
@@ -86,7 +87,11 @@ export default function VendorSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       });
-      if (!res.ok) throw new Error('Failed to save settings');
+      if (!res.ok) {
+        toast.error('Failed to save settings. Please try again.');
+        setSaving(false);
+        return;
+      }
       toast.success('Settings saved successfully!');
     } catch (error: any) {
       console.error(error);
@@ -109,7 +114,10 @@ export default function VendorSettingsPage() {
         body: uploadData
       });
       
-      if (!res.ok) throw new Error('Upload failed');
+      if (!res.ok) {
+        toast.error('Failed to upload image', { id: toastId });
+        return;
+      }
       
       const data = await res.json();
       setSettings({ ...settings, heroImage: data.url });
@@ -218,6 +226,18 @@ export default function VendorSettingsPage() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414]" 
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Bank Account Details</label>
+              <textarea 
+                rows={3}
+                placeholder="e.g. GTBank - 0123456789 - E.star SleekNails"
+                value={settings.bankDetails || ''}
+                onChange={e => setSettings({...settings, bankDetails: e.target.value})}
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414]" 
+              />
+              <p className="text-xs text-gray-500 mt-1">This will be printed on pending invoices for clients to make transfers.</p>
             </div>
 
             <div>

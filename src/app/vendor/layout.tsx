@@ -5,7 +5,8 @@ import VendorSidebar from './VendorSidebar';
 
 const ADMIN_EMAILS = [
   'oseghaleleonard39@gmail.com', // Dev email
-  'owner@example.com' // Brand owner's email
+  'relayamin12@gmail.com',       // Admin email
+  'owner@example.com'            // Brand owner's email
 ];
 
 export default async function VendorLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +33,7 @@ export default async function VendorLayout({ children }: { children: React.React
     <div className="flex h-screen bg-gray-50 text-black flex-col md:flex-row">
       <VendorSidebar />
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-gray-50 w-full">
+      <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50 w-full">
         {children}
       </main>
     </div>

@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSettings } from '@/context/SettingsContext';
 
 export default function PolicyPage() {
-  const [loading, setLoading] = useState(true);
+  const { settings, isLoading } = useSettings();
   const [policyText, setPolicyText] = useState("");
 
   const DEFAULT_POLICY = `1. Deposit & Payment
@@ -31,14 +32,10 @@ export default function PolicyPage() {
 - 1 extra guest is permitted per appointment.`;
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        setPolicyText(data.policyText || DEFAULT_POLICY);
-      })
-      .catch(() => setPolicyText(DEFAULT_POLICY))
-      .finally(() => setLoading(false));
-  }, []);
+    if (!isLoading) {
+      setPolicyText((settings as any).policyText || DEFAULT_POLICY);
+    }
+  }, [settings, isLoading]);
 
   const getIconForTitle = (title: string) => {
     const t = title.toLowerCase();
@@ -92,7 +89,7 @@ export default function PolicyPage() {
 
   const parsedPolicies = parsePolicies(policyText);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#FBF9F7] pt-32 pb-24 flex justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A1414]"></div>
@@ -111,7 +108,7 @@ export default function PolicyPage() {
         <div className="text-center mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <p className="text-primary font-bold tracking-[0.2em] uppercase text-xs mb-4">Read Before Booking</p>
           <h1 className="font-serif text-4xl md:text-6xl text-[#1A1414] mb-4">Policy & Terms</h1>
-          <p className="text-gray-500 text-lg">E.star SleekNails Booking Policies 💅✨</p>
+          <p className="text-gray-500 text-lg">{settings.name} Booking Policies 💅✨</p>
         </div>
 
         {/* Policy Grid */}
@@ -151,7 +148,7 @@ export default function PolicyPage() {
           <p className="text-sm text-gray-600 mb-3">Please make your deposit to:</p>
           
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-black/5 inline-block mx-auto w-full max-w-sm">
-            <p className="font-serif text-2xl mb-1 text-[#1A1414]">E.star SleekNails</p>
+            <p className="font-serif text-2xl mb-1 text-[#1A1414]">{settings.name}</p>
             <p className="text-primary mb-4 text-sm font-medium">GTBank</p>
             <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-100 group cursor-pointer hover:bg-gray-100 transition-colors">
               <span className="font-mono text-2xl tracking-[0.2em] text-[#1A1414]">0123456789</span>

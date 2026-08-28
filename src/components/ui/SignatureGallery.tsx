@@ -1,66 +1,62 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function SignatureGallery() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [todayHours, setTodayHours] = useState<string>("9:00–5:00");
+  const { settings } = useSettings();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
-    const fetchHours = async () => {
-      try {
-        const res = await fetch('/api/settings');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.hours) {
-            const hoursArray = Array.isArray(data.hours) ? data.hours : Object.values(data.hours);
-            const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-            const todaySettings = hoursArray.find((h: any) => h.day === todayName);
-            
-            const checkOpen = () => {
-              if (!todaySettings || todaySettings.isClosed) {
-                setIsOpen(false);
-                setTodayHours("Closed Today");
-                return;
-              }
-              
-              const now = new Date();
-              const currentH = now.getHours();
-              const currentM = now.getMinutes();
-              const currentTotalM = currentH * 60 + currentM;
-              
-              const [openH, openM] = todaySettings.open.split(':').map(Number);
-              const [closeH, closeM] = todaySettings.close.split(':').map(Number);
-              const openTotalM = openH * 60 + openM;
-              const closeTotalM = closeH * 60 + closeM;
-              
-              setIsOpen(currentTotalM >= openTotalM && currentTotalM < closeTotalM);
-              
-              // Format for display
-              const formatTime = (h: number, m: number) => {
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-                return `${displayH}:${m.toString().padStart(2, '0')} ${ampm}`;
-              };
-              setTodayHours(`${formatTime(openH, openM)} - ${formatTime(closeH, closeM)}`);
-            };
-            
-            checkOpen();
-            timer = setInterval(checkOpen, 60000);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load hours for gallery", err);
+    const checkOpen = () => {
+      if (!settings.hours || settings.hours.length === 0) return;
+      
+      const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const todaySettings = settings.hours.find((h: any) => h.day.toLowerCase() === todayName);
+      
+      if (!todaySettings || todaySettings.isClosed) {
+        setIsOpen(false);
+        setTodayHours("Closed Today");
+        return;
       }
+      
+      const now = new Date();
+      const currentH = now.getHours();
+      const currentM = now.getMinutes();
+      const currentTotalM = currentH * 60 + currentM;
+      
+      const [openH, openM] = todaySettings.open.split(':').map(Number);
+      const [closeH, closeM] = todaySettings.close.split(':').map(Number);
+      const openTotalM = openH * 60 + openM;
+      const closeTotalM = closeH * 60 + closeM;
+      
+      if (currentTotalM >= openTotalM && currentTotalM < closeTotalM) {
+        setIsOpen(true);
+      } else {
+        setIsOpen(false);
+      }
+      
+      const formatTime = (timeStr: string) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}${m > 0 ? `:${m.toString().padStart(2, '0')}` : ''} ${ampm}`;
+      };
+      
+      setTodayHours(`${formatTime(todaySettings.open)} - ${formatTime(todaySettings.close)}`);
     };
+
+    checkOpen();
+    timer = setInterval(checkOpen, 60000);
     
-    fetchHours();
-    return () => { if (timer) clearInterval(timer); };
-  }, []);
+    return () => clearInterval(timer);
+  }, [settings.hours]);
 
   const images = [
     "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80",
@@ -69,7 +65,7 @@ export default function SignatureGallery() {
     "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1595868615330-84c6c518b2c2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=800&q=80",
   ];
 
   const testimonials = [

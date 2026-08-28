@@ -98,7 +98,9 @@ export default function VendorServicesPage() {
         });
 
         if (!res.ok) {
-          throw new Error('Upload failed');
+          toast.error("Failed to upload image. Please try again.");
+          setUploading(false);
+          return;
         }
 
         const data = await res.json();
@@ -205,7 +207,10 @@ export default function VendorServicesPage() {
     if (!confirm('Are you sure you want to delete this service?')) return;
     try {
       const res = await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
+      if (!res.ok) {
+        toast.error('Failed to delete service');
+        return;
+      }
       toast.success('Service deleted');
       fetchServices();
     } catch (error) {
@@ -214,8 +219,8 @@ export default function VendorServicesPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50/50">
-      <div className="flex-1 overflow-y-auto p-6 md:p-12 relative">
+    <>
+      <div className="min-h-full p-6 md:p-12 relative bg-gray-50/50">
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-3xl font-serif text-[#1A1414] font-bold">Services</h1>
           <button onClick={() => openDrawer()} className="flex items-center gap-2 px-5 py-3 bg-[#1A1414] text-white rounded-xl text-sm font-bold hover:bg-black transition-colors shadow-lg shadow-black/10">
@@ -394,6 +399,6 @@ export default function VendorServicesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -5,16 +5,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from '@/context/CartContext';
+import { useSettings } from '@/context/SettingsContext';
 import { useRef } from 'react';
 import SignatureGallery from "@/components/ui/SignatureGallery";
-import { db } from '@/lib/firebase/config';
-import { collection, getDocs } from 'firebase/firestore';
+import PolicySection from "@/components/ui/PolicySection";
 
 import { toast } from 'sonner';
 
 export default function HomePage() {
   const router = useRouter();
   const { items, addItem, updateQuantity, removeItem } = useCart();
+  const { settings } = useSettings();
   const [servicesList, setServicesList] = useState<any[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -80,16 +81,24 @@ export default function HomePage() {
       {/* 2. Hero Section */}
       <section className="relative h-screen min-h-[600px] flex flex-col items-center justify-center pt-24 pb-12">
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0 bg-surface">
-          <video 
-            autoPlay 
-            loop 
-            muted 
-            playsInline
-            poster="https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=1920&q=80"
-            className="absolute inset-0 w-full h-full object-cover opacity-90"
-          >
-            <source src="https://assets.mixkit.co/videos/13084/13084-720.mp4" type="video/mp4" />
-          </video>
+          {settings.heroImage ? (
+            <img 
+              src={settings.heroImage} 
+              alt="Studio Background"
+              className="absolute inset-0 w-full h-full object-cover opacity-90"
+            />
+          ) : (
+            <video 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
+              poster="https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=1920&q=80"
+              className="absolute inset-0 w-full h-full object-cover opacity-90"
+            >
+              <source src="https://assets.mixkit.co/videos/13084/13084-720.mp4" type="video/mp4" />
+            </video>
+          )}
         {/* Bottom-to-top gradient scrim for text legibility */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#1A1414] via-[#1A1414]/50 to-transparent"></div>
           {/* Radial vignette to darken edges but keep center video visible */}
@@ -100,17 +109,17 @@ export default function HomePage() {
           {/* Location Badge */}
           <div className="inline-flex items-center gap-3 mb-8 px-5 py-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white/90 text-xs font-semibold tracking-[0.3em] uppercase shadow-xl">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-            Lagos · Nail Studio
+            {settings.address.split(',')[0]} · Nail Studio
           </div>
           
           {/* Main Heading */}
-          <h1 className="font-serif text-6xl md:text-8xl lg:text-[7.5rem] mb-6 tracking-tight drop-shadow-[0_4px_32px_rgba(0,0,0,0.5)] text-white leading-[1.1]">
-            E.star <span className="italic text-[#F8D9CE]">Sleek</span>Nails
+          <h1 className="font-serif text-5xl md:text-8xl lg:text-[7.5rem] mb-6 tracking-tight drop-shadow-[0_4px_32px_rgba(0,0,0,0.5)] text-white leading-[1.1]">
+            {settings.name}
           </h1>
           
           {/* Tagline */}
           <p className="text-xl md:text-2xl font-light mb-12 max-w-2xl text-white drop-shadow-md leading-relaxed">
-            Acrylic, BIAB & hard gel sets, <br className="hidden md:block"/> done <span className="font-medium italic">clean</span> and on time.
+            {settings.bio}
           </p>
           
           {/* CTA Group */}
@@ -266,6 +275,9 @@ export default function HomePage() {
 
         {/* 4. Signature Sets Gallery */}
         <SignatureGallery />
+
+        {/* 5. Policies & Terms (compact) */}
+        <PolicySection />
 
         {/* Floating Actions */}
         <div className="fixed bottom-6 right-6 z-40 flex flex-row items-center gap-3">

@@ -2,9 +2,10 @@
 
 import { useCart } from "@/context/CartContext";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { auth } from '@/lib/firebase/config';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function BookLayout({ children }: { children: React.ReactNode }) {
   const { items, updateQuantity, removeItem } = useCart();
@@ -133,7 +134,7 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                 </div>
 
                 {pathname !== '/book/success' && (
-                  <p className="text-xs text-center text-gray-400 mt-6 mt-4">
+                  <p className="text-xs text-center text-gray-400 mt-4">
                     Taxes and exact fees calculated at checkout.
                   </p>
                 )}

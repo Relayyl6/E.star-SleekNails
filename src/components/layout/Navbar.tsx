@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { useSettings } from '@/context/SettingsContext';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -15,6 +16,7 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
   const { items, setIsOpen } = useCart();
+  const { settings } = useSettings();
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   const normalizedPath = pathname.toLowerCase();
@@ -61,10 +63,8 @@ export default function Navbar() {
           <div className="flex items-center gap-6 md:gap-12 flex-1">
             {/* Logo */}
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className={`flex items-center shrink-0 bg-white/60 md:bg-white/40 backdrop-blur-md rounded-xl shadow-sm border border-white/40 transition-all duration-300 ${scrolled ? 'p-1.5 px-3' : 'p-2 px-3'}`}>
-               {/* Mobile Icon */}
-               <Image src="/logo.png" alt="E.star" width={40} height={20} className={`md:hidden object-contain transition-all duration-300 ${scrolled ? 'h-5 w-auto' : 'h-6 w-auto'}`} />
-               {/* Desktop Wordmark */}
-               <Image src="/logo.png" alt="E.star SleekNails" width={140} height={40} className={`hidden md:block object-contain transition-all duration-300 ${scrolled ? 'h-7 w-auto' : 'h-10 w-auto'}`} priority />
+               <Image src="/logo.png" alt={settings.name} width={40} height={20} className={`md:hidden object-contain transition-all duration-300 ${scrolled ? 'h-5 w-auto' : 'h-6 w-auto'}`} />
+               <Image src="/logo.png" alt={settings.name} width={140} height={40} className={`hidden md:block object-contain transition-all duration-300 ${scrolled ? 'h-7 w-auto' : 'h-10 w-auto'}`} priority />
             </Link>
             
             {/* Glassmorphism Links Pill - Desktop Only */}

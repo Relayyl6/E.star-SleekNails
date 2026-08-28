@@ -58,7 +58,11 @@ export default function ProfilePage() {
         })
       });
 
-      if (!res.ok) throw new Error('Failed to update profile');
+      if (!res.ok) {
+        toast.error('Failed to update profile');
+        setSaving(false);
+        return;
+      }
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error(error);

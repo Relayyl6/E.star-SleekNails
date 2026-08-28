@@ -13,15 +13,93 @@ export async function GET(request: Request) {
     
     if (type === 'full') {
       const email = searchParams.get('email');
-      let snapshot;
-      if (email) {
-        snapshot = await db.collection('bookings').where('customerEmail', '==', email).get();
+      const userId = searchParams.get('userId');
+      if (userId && email) {
+        const lowerEmail = email.toLowerCase().trim();
+        const promises = [
+          db.collection('bookings').where('userId', '==', userId).get(),
+          db.collection('bookings').where('email', '==', email).get()
+        ];
+        
+        // If they differ, query both so we catch old mixed-case guest bookings
+        if (email !== lowerEmail) {
+          promises.push(db.collection('bookings').where('email', '==', lowerEmail).get());
+        }
+        
+        const guestRefs = searchParams.get('guestRefs');
+        if (guestRefs) {
+          const refs = guestRefs.split(',').filter(Boolean).slice(0, 10);
+          if (refs.length > 0) {
+            promises.push(db.collection('bookings').where('ref', 'in', refs).get());
+          }
+        }
+
+        const snaps = await Promise.all(promises);
+        
+        const bookingMap = new Map();
+        
+        // Add all bookings found by userId
+        snaps[0].docs.forEach(doc => bookingMap.set(doc.id, { id: doc.id, ...doc.data() }));
+        
+        // Add and auto-link bookings found by email that don't have a userId yet
+        for (const snap of snaps.slice(1)) { // Skip the first one which is userIdSnap
+          for (const doc of snap.docs) {
+            const data = doc.data();
+            bookingMap.set(doc.id, { id: doc.id, ...data });
+            
+            // Auto-link guest bookings to the current user's ID permanently
+            if (!data.userId && userId) {
+              try {
+                await db.collection('bookings').doc(doc.id).update({ userId });
+              } catch (e) {
+                console.error('Failed to auto-link booking', e);
+              }
+            }
+          }
+        }
+        
+        const bookings = Array.from(bookingMap.values());
+        return NextResponse.json(bookings, { status: 200 });
+      } else if (userId) {
+        const promises = [
+          db.collection('bookings').where('userId', '==', userId).get()
+        ];
+        
+        const guestRefs = searchParams.get('guestRefs');
+        if (guestRefs) {
+          const refs = guestRefs.split(',').filter(Boolean).slice(0, 10);
+          if (refs.length > 0) {
+            promises.push(db.collection('bookings').where('ref', 'in', refs).get());
+          }
+        }
+        
+        const snaps = await Promise.all(promises);
+        const bookingMap = new Map();
+        
+        snaps.forEach(snap => {
+          snap.docs.forEach(doc => {
+            const data = doc.data();
+            bookingMap.set(doc.id, { id: doc.id, ...data });
+            
+            // Auto-link guest bookings to the current user's ID permanently
+            if (!data.userId) {
+              try {
+                db.collection('bookings').doc(doc.id).update({ userId });
+              } catch (e) {}
+            }
+          });
+        });
+        
+        return NextResponse.json(Array.from(bookingMap.values()), { status: 200 });
+      } else if (email) {
+        const snapshot = await db.collection('bookings').where('email', '==', email).get();
+        const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return NextResponse.json(bookings, { status: 200 });
       } else {
-        snapshot = await db.collection('bookings').get();
+        const snapshot = await db.collection('bookings').get();
+        const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return NextResponse.json(bookings, { status: 200 });
       }
-      
-      const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      return NextResponse.json(bookings, { status: 200 });
     }
     
     if (dateParam) {
@@ -63,7 +141,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, phone, instagram, notes, ref, date, time, items, total, photoUrl } = body;
+    const { email, firstName, lastName, phone, instagram, notes, ref, date, time, items, total, photoUrl, userId } = body;
 
     if (!email || !date || !time || !ref) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -86,7 +164,7 @@ export async function POST(request: Request) {
 
     // Save to Firestore
     await bookingsRef.doc(ref).set({
-      email,
+      email: email ? email.toLowerCase().trim() : '',
       firstName,
       lastName,
       phone: phone || '',
@@ -98,6 +176,7 @@ export async function POST(request: Request) {
       items,
       total,
       photoUrl: photoUrl || null,
+      userId: userId || null,
       status: 'PENDING',
       createdAt: new Date().toISOString()
     });
@@ -212,9 +291,19 @@ export async function POST(request: Request) {
         ]
       });
 
+      let adminEmail = 'oseghaleleonard39@gmail.com';
+      try {
+        const settingsDoc = await db.collection('settings').doc('store').get();
+        if (settingsDoc.exists) {
+          adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
+        }
+      } catch (e) {
+        console.error("Error fetching admin email for booking alert", e);
+      }
+
       const adminEmailPayload: any = {
         from: 'onboarding@resend.dev',
-        to: ['oseghaleleonard39@gmail.com'],
+        to: [adminEmail],
         subject: `New Booking Alert: ${ref}`,
         html: `
           <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
@@ -253,9 +342,64 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Missing ID or Status' }, { status: 400 });
     }
     
-    await db.collection('bookings').doc(id).update({ status });
+    const docRef = db.collection('bookings').doc(id);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+    
+    const data = docSnap.data() as any;
+    
+    await docRef.update({ status });
+    
+    // Send email notification on cancellation
+    if (status === 'CANCELLED' && data.email && process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      // Email to customer
+      await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: [data.email],
+        subject: `Booking Cancelled: ${data.ref || id}`,
+        html: `
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+            <h1 style="color: #1A1414;">Hi ${data.firstName || 'there'},</h1>
+            <p>Your appointment on <strong>${new Date(data.date).toLocaleDateString()}</strong> at <strong>${data.time}</strong> has been successfully cancelled as requested.</p>
+            <p>If you have any questions or wish to reschedule, please visit our website.</p>
+            <p>Best regards,<br/>E.star SleekNails Team</p>
+          </div>
+        `
+      });
+      
+      // Alert Admin
+      let adminEmail = 'oseghaleleonard39@gmail.com';
+      try {
+        const settingsDoc = await db.collection('settings').doc('store').get();
+        if (settingsDoc.exists) adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
+      } catch(e) {}
+      
+      await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: [adminEmail],
+        subject: `Booking Cancelled Alert: ${data.ref || id}`,
+        html: `
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #1A1414;">Appointment Cancelled</h2>
+            <p>The following appointment was cancelled:</p>
+            <ul>
+              <li><strong>Ref:</strong> ${data.ref || id}</li>
+              <li><strong>Customer:</strong> ${data.firstName} ${data.lastName} (${data.email})</li>
+              <li><strong>Date/Time:</strong> ${new Date(data.date).toLocaleDateString()} @ ${data.time}</li>
+            </ul>
+          </div>
+        `
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("PATCH Booking Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

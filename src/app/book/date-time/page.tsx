@@ -123,7 +123,12 @@ export default function DateTimeSelection() {
     fetchHours();
   }, []);
 
-  const bookedSlots = selectedDate ? (allBookings[selectedDate.toISOString()] || []) : [];
+  const toLocalDateStr = (d: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  const bookedSlots = selectedDate ? (allBookings[toLocalDateStr(selectedDate)] || []) : [];
   const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
 
   const formatTime = (seconds: number) => {
@@ -141,9 +146,11 @@ export default function DateTimeSelection() {
 
   const handleContinue = () => {
     if (selectedDate && selectedTime) {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const localDateStr = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(selectedDate.getDate())}`;
       setBookingDetails(prev => ({
         ...prev,
-        date: selectedDate.toISOString(),
+        date: localDateStr,
         time: selectedTime
       }));
       router.push('/book/details');
@@ -162,7 +169,7 @@ export default function DateTimeSelection() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: waitlistEmail,
-            date: selectedDate.toISOString()
+            date: `${selectedDate.getFullYear()}-${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}-${selectedDate.getDate().toString().padStart(2, '0')}`
           })
         });
         
@@ -199,7 +206,10 @@ export default function DateTimeSelection() {
 
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
-      const dateStr = date.toISOString();
+      // Use local YYYY-MM-DD string — NOT toISOString() which shifts to UTC
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const dateStr = `${year}-${pad(month + 1)}-${pad(i)}`;
+      
       const isPast = date < today;
       const isSelected = selectedDate?.toDateString() === date.toDateString();
       

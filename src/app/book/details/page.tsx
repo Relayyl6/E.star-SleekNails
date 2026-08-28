@@ -121,7 +121,8 @@ export default function DetailsForm() {
             items,
             total,
             ref: bookingRef,
-            photoUrl: safePhotoUrl
+            photoUrl: safePhotoUrl,
+            userId: auth.currentUser?.uid || null
           })
         });
 
@@ -144,6 +145,17 @@ export default function DetailsForm() {
           ...formData,
           bookingRef
         }));
+        
+        // If guest booking, save ref to localStorage so it can be claimed upon signup
+        if (!auth.currentUser) {
+          try {
+            const existingStr = localStorage.getItem('guest_booking_refs');
+            const existing = existingStr ? JSON.parse(existingStr) : [];
+            existing.push(bookingRef);
+            localStorage.setItem('guest_booking_refs', JSON.stringify(existing));
+          } catch(e) {}
+        }
+        
         router.push('/book/success');
         
       } catch (err: any) {

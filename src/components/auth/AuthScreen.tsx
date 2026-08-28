@@ -94,9 +94,9 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
       if (res.ok) {
         const data = await res.json();
         if (data.role === 'ADMIN') {
-          router.push('/vendor/dashboard');
+          window.location.href = '/vendor/dashboard';
         } else {
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         }
         toast.success(isLogin ? "Welcome back!" : "Account created successfully!");
       } else {
@@ -127,9 +127,9 @@ export default function AuthScreen({ initialMode = 'login' }: { initialMode?: 'l
       if (res.ok) {
         const data = await res.json();
         if (data.role === 'ADMIN') {
-          router.push('/vendor/dashboard');
+          window.location.href = '/vendor/dashboard';
         } else {
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         }
         toast.success("Successfully signed in with Google!");
       } else {

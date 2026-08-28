@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs } from 'firebase/firestore';
 import { toast } from 'sonner';
+import { useSettings } from '@/context/SettingsContext';
 
 export default function VendorDashboardPage() {
+  const { settings } = useSettings();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
@@ -20,12 +20,25 @@ export default function VendorDashboardPage() {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch('/api/bookings?type=full');
-      if (!res.ok) throw new Error('Failed to fetch bookings');
-      const data = await res.json();
+      const [bookingsRes, waitlistRes] = await Promise.all([
+        fetch(`/api/bookings?type=full&_t=${Date.now()}`),
+        fetch(`/api/waitlist?_t=${Date.now()}`)
+      ]);
+
+      let allData: any[] = [];
+      
+      if (bookingsRes.ok) {
+        const bookingsData = await bookingsRes.json();
+        allData = [...allData, ...bookingsData];
+      }
+      
+      if (waitlistRes.ok) {
+        const waitlistData = await waitlistRes.json();
+        allData = [...allData, ...waitlistData];
+      }
       
       // Sort by when it was booked (most recent first)
-      const sorted = data.sort((a: any, b: any) => {
+      const sorted = allData.sort((a: any, b: any) => {
         const dateA = new Date(a.createdAt || a.date).getTime();
         const dateB = new Date(b.createdAt || b.date).getTime();
         return dateB - dateA;
@@ -34,6 +47,7 @@ export default function VendorDashboardPage() {
       setBookings(sorted);
     } catch (error) {
       console.error("Error fetching bookings:", error);
+      toast.error('Failed to load bookings');
     }
     setLoading(false);
   };
@@ -50,7 +64,10 @@ export default function VendorDashboardPage() {
         body: JSON.stringify({ id, status: newStatus })
       });
       
-      if (!res.ok) throw new Error('Failed to update status');
+      if (!res.ok) {
+        toast.error('Failed to update booking status');
+        return;
+      }
       
       toast.success(`Booking marked as ${newStatus}`);
       fetchBookings(); // Refresh the list
@@ -58,6 +75,128 @@ export default function VendorDashboardPage() {
       console.error(error);
       toast.error('Failed to update booking status');
     }
+  };
+
+  const [sendingReceipt, setSendingReceipt] = useState(false);
+
+  const sendReceipt = async (bookingId: string) => {
+    setSendingReceipt(true);
+    const toastId = toast.loading('Sending receipt...');
+    try {
+      const res = await fetch('/api/bookings/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId })
+      });
+      
+      if (!res.ok) {
+        toast.error('Failed to send receipt', { id: toastId });
+      } else {
+        toast.success('Receipt sent successfully!', { id: toastId });
+      }
+    } catch (error) {
+      toast.error('Failed to send receipt', { id: toastId });
+    }
+    setSendingReceipt(false);
+  };
+
+  const handleDownloadDocument = (booking: any) => {
+    const docTitle = booking.status?.toUpperCase() === 'COMPLETED' ? 'OFFICIAL RECEIPT' : booking.status?.toUpperCase() === 'PENDING' ? 'PAYMENT REQUEST' : 'INVOICE';
+    
+    const invoiceHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${docTitle} - ${booking.ref || booking.id}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; color: #333; max-width: 800px; margin: 0 auto; }
+            .header { border-bottom: 2px solid #1A1414; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; }
+            h1 { margin: 0; color: #1A1414; }
+            .text-right { text-align: right; }
+            table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+            th { background-color: #f9f9f9; color: #666; font-size: 12px; text-transform: uppercase; }
+            .total-row td { font-weight: bold; border-top: 2px solid #333; }
+            .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #eee; }
+            .flex-between { display: flex; justify-content: space-between; }
+            @media print {
+              body { padding: 0; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1>${docTitle}</h1>
+              <p>Reference: <strong>${booking.ref || booking.id}</strong></p>
+              <p>Date Issued: ${new Date().toLocaleDateString()}</p>
+            </div>
+            <div class="text-right">
+              <h2 style="margin:0;">E.star SleekNails</h2>
+              <p>Status: <span class="status" style="${booking.status?.toUpperCase() === 'COMPLETED' ? 'color: green;' : ''}">${booking.status || 'PENDING'}</span></p>
+            </div>
+          </div>
+          
+          <div class="flex-between">
+            <div>
+              <p style="color: #666; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Bill To</p>
+              <p style="margin: 0; font-weight: bold;">${booking.firstName} ${booking.lastName}</p>
+              <p style="margin: 4px 0;">${booking.email}</p>
+              <p style="margin: 0;">${booking.phone}</p>
+            </div>
+            <div class="text-right">
+              <p style="color: #666; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Service Details</p>
+              <p style="margin: 0;">Date: <strong>${new Date(booking.date).toLocaleDateString()}</strong></p>
+              <p style="margin: 4px 0;">Time: <strong>${booking.time || 'N/A'}</strong></p>
+            </div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Service Description</th>
+                <th>Qty</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${booking.items?.map((item: any) => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.quantity || 1}</td>
+                  <td style="text-align: right;">${item.price}</td>
+                </tr>
+              `).join('') || `<tr><td>Custom Service</td><td>1</td><td style="text-align: right;">-</td></tr>`}
+              <tr class="total-row">
+                <td colspan="2" style="text-align: right; padding-top: 20px;">${booking.status?.toUpperCase() === 'COMPLETED' ? 'Total Paid:' : 'Total Amount:'}</td>
+                <td style="text-align: right; font-size: 18px; padding-top: 20px;">${String(booking.total || '0').includes('₦') ? booking.total : `₦${booking.total || '0'}`}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          ${(booking.status?.toUpperCase() === 'PENDING') ? `
+          <div style="margin-top: 40px; padding: 20px; background-color: #f9f9f9; border-left: 4px solid #1A1414;">
+            <h3 style="margin-top: 0; color: #1A1414; font-size: 14px; text-transform: uppercase;">Payment Instructions</h3>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap;">Please transfer your payment to the following account to confirm your booking:<br/><br/><strong>${settings?.bankDetails?.trim() ? settings.bankDetails : 'GTBank\\n0123456789\\nE.star SleekNails'}</strong></p>
+          </div>
+          ` : ''}
+          
+          <div style="margin-top: 60px; font-size: 12px; color: #666; text-align: center;">
+            <p>Thank you for choosing E.star SleekNails.</p>
+            <p>If you have any questions about this document, please contact us.</p>
+          </div>
+          
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `;
+    const blob = new Blob([invoiceHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   };
 
   const handleExportCSV = () => {
@@ -127,7 +266,7 @@ export default function VendorDashboardPage() {
   };
 
   return (
-    <div className="bg-white h-full p-6 md:p-10 shadow-sm border border-black/5">
+    <div className="bg-white min-h-full p-6 md:p-10 shadow-sm border border-black/5">
       <div className="flex flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-serif text-[#1A1414]">Overview</h1>
         <div className="flex gap-2">
@@ -182,16 +321,19 @@ export default function VendorDashboardPage() {
                 {/* 1. Customer Info */}
                 <div className="flex items-center gap-3 w-full md:w-1/4">
                   <div className="w-10 h-10 md:w-12 md:h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-base md:text-lg shrink-0">
-                    {booking.firstName?.[0] || '?'}{booking.lastName?.[0] || ''}
+                    {booking.firstName?.[0] || 'W'}{booking.lastName?.[0] || ''}
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900 text-sm md:text-base leading-tight">{booking.firstName} {booking.lastName}</h3>
-                    <a href={`mailto:${booking.email}`} onClick={e => e.stopPropagation()} className="text-xs text-gray-500 hover:text-primary transition-colors line-clamp-1">{booking.email}</a>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-gray-900 text-sm md:text-base leading-tight truncate">
+                      {booking.firstName ? `${booking.firstName} ${booking.lastName}` : 'Waitlist User'}
+                    </h3>
+                    <a href={`mailto:${booking.email}`} onClick={e => e.stopPropagation()} className="text-xs text-gray-500 hover:text-primary transition-colors line-clamp-1 truncate block">{booking.email}</a>
                     {booking.phone && <p className="text-xs text-gray-400 mt-0.5">{booking.phone}</p>}
                   </div>
                   {/* Status Pill (Visible top-right on mobile) */}
                   <div className="md:hidden ml-auto">
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                      booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
                       isConfirmed ? 'bg-green-100 text-green-700' : 
                       isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
                       'bg-gray-100 text-gray-700'
@@ -204,31 +346,34 @@ export default function VendorDashboardPage() {
                 {/* Mobile Grid Wrapper for 2 & 3 */}
                 <div className="grid grid-cols-2 md:flex md:w-2/4 md:justify-between gap-4 w-full bg-gray-50 md:bg-transparent p-3 md:p-0 rounded-xl">
                   {/* 2. Date & Time */}
-                  <div className="flex flex-col justify-center w-full">
+                  <div className="flex flex-col justify-center w-full min-w-0">
                     <div className="flex items-center gap-1.5 mb-1 text-gray-700">
                       <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       <span className="text-xs md:text-sm font-bold truncate">
                         {new Date(booking.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-gray-600">
-                      <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      <span className="text-xs md:text-sm">{booking.time}</span>
-                    </div>
+                    {booking.time && (
+                      <div className="flex items-center gap-1.5 text-gray-600">
+                        <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span className="text-xs md:text-sm">{booking.time}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* 3. Services & Price */}
-                  <div className="flex flex-col justify-center border-l md:border-none border-gray-200 pl-4 md:pl-0 w-full">
-                    <p className="text-xs md:text-sm font-medium text-gray-800 line-clamp-1 mb-1">
-                      {booking.items?.map((item: any) => item.name).join(', ') || 'Custom'}
+                  <div className="flex flex-col justify-center border-l md:border-none border-gray-200 pl-4 md:pl-0 w-full min-w-0">
+                    <p className="text-xs md:text-sm font-medium text-gray-800 line-clamp-1 mb-1 truncate">
+                      {booking.items?.map((item: any) => item.name).join(', ') || (isWaitlist ? 'Waitlist Request' : 'Custom')}
                     </p>
-                    <p className="text-sm md:text-base font-bold text-primary">{booking.total || '₦0'}</p>
+                    <p className="text-sm md:text-base font-bold text-primary">{booking.total || (isWaitlist ? '-' : '₦0')}</p>
                   </div>
                 </div>
 
                 {/* 4. Status & Actions */}
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-1/4 gap-3 mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-none border-gray-100">
                   <span className={`hidden md:inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
+                    booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
                     isConfirmed ? 'bg-green-100 text-green-700' : 
                     isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
                     'bg-gray-100 text-gray-700'
@@ -237,7 +382,7 @@ export default function VendorDashboardPage() {
                   </span>
                   
                   <div className="flex gap-2 w-full md:w-auto md:justify-end">
-                    {!isConfirmed && (
+                    {booking.status?.toUpperCase() === 'PENDING' && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'CONFIRMED'); }}
                         className="flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-bold transition-colors text-center"
@@ -245,7 +390,15 @@ export default function VendorDashboardPage() {
                         Confirm
                       </button>
                     )}
-                    {booking.status?.toUpperCase() !== 'CANCELLED' && (
+                    {booking.status?.toUpperCase() === 'CONFIRMED' && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'COMPLETED'); }}
+                        className="flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 bg-[#1A1414] text-white hover:bg-black rounded-lg text-sm font-bold transition-colors text-center"
+                      >
+                        Receipt
+                      </button>
+                    )}
+                    {booking.status?.toUpperCase() !== 'CANCELLED' && booking.status?.toUpperCase() !== 'COMPLETED' && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'CANCELLED'); }}
                         className="flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-lg text-sm font-bold transition-colors text-center"
@@ -305,6 +458,7 @@ export default function VendorDashboardPage() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-black outline-none appearance-none bg-white"
                 >
                   <option value="ALL">All Statuses</option>
+                  <option value="COMPLETED">Completed (Receipts)</option>
                   <option value="CONFIRMED">Confirmed</option>
                   <option value="PENDING">Pending</option>
                   <option value="WAITLIST">Waitlist</option>
@@ -423,20 +577,57 @@ export default function VendorDashboardPage() {
             
             {/* Actions Footer */}
             <div className="p-6 border-t border-gray-100 bg-white space-y-3">
-              {selectedBooking.status?.toUpperCase() !== 'CONFIRMED' && (
+              {selectedBooking.status?.toUpperCase() === 'PENDING' && (
                 <button 
                   onClick={() => { updateBookingStatus(selectedBooking.id, 'CONFIRMED'); setSelectedBooking(null); }}
                   className="w-full py-3 bg-green-500 text-white hover:bg-green-600 rounded-xl font-bold transition-colors"
                 >
-                  Confirm Appointment
+                  Confirm Payment
                 </button>
               )}
-              {selectedBooking.status?.toUpperCase() !== 'CANCELLED' && (
+
+              {selectedBooking.status?.toUpperCase() === 'CONFIRMED' && (
+                <div className="flex flex-col md:flex-row gap-3">
+                  <button 
+                    onClick={() => handleDownloadDocument(selectedBooking)}
+                    className="flex-1 py-3 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl font-bold transition-colors"
+                  >
+                    Download Invoice
+                  </button>
+                  <button 
+                    onClick={() => { updateBookingStatus(selectedBooking.id, 'COMPLETED'); setSelectedBooking(null); }}
+                    className="flex-1 py-3 bg-[#1A1414] text-white hover:bg-black rounded-xl font-bold transition-colors"
+                  >
+                    Generate Receipt
+                  </button>
+                </div>
+              )}
+
+              {selectedBooking.status?.toUpperCase() === 'COMPLETED' && (
+                <div className="flex flex-col md:flex-row gap-3">
+                  <button 
+                    onClick={() => handleDownloadDocument(selectedBooking)}
+                    className="flex-1 py-3 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Download Receipt
+                  </button>
+                  <button 
+                    onClick={() => sendReceipt(selectedBooking.id)}
+                    disabled={sendingReceipt}
+                    className="flex-1 py-3 bg-[#1A1414] text-white hover:bg-black rounded-xl font-bold transition-colors disabled:opacity-50"
+                  >
+                    {sendingReceipt ? 'Emailing...' : 'Email Receipt'}
+                  </button>
+                </div>
+              )}
+
+              {selectedBooking.status?.toUpperCase() !== 'CANCELLED' && selectedBooking.status?.toUpperCase() !== 'COMPLETED' && (
                 <button 
                   onClick={() => { updateBookingStatus(selectedBooking.id, 'CANCELLED'); setSelectedBooking(null); }}
                   className="w-full py-3 bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl font-bold transition-colors"
                 >
-                  Cancel Appointment
+                  Cancel Booking
                 </button>
               )}
             </div>
