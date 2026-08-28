@@ -290,11 +290,14 @@ export async function POST(request: Request) {
       await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: [email],
-        subject: `Booking Confirmed: ${ref}`,
+        subject: `Booking Request Received: ${ref} (Action Required)`,
         html: `
           <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
             <h1 style="color: #1A1414;">Hi ${firstName},</h1>
-            <p>Your appointment has been successfully booked!</p>
+            <p>We have successfully received your appointment request!</p>
+            <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffeeba;">
+              <strong>Action Required:</strong> Your booking is currently <strong>PENDING</strong>. Please log into your dashboard, download your invoice, and complete the payment instructions to secure your slot.
+            </div>
             <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p style="margin:0 0 10px 0;"><strong>Reference:</strong> ${ref}</p>
               <p style="margin:0 0 10px 0;"><strong>Date:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()}</p>
@@ -302,8 +305,9 @@ export async function POST(request: Request) {
               <h3 style="margin: 20px 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Services Booked</h3>
               ${itemsHtml}
             </div>
-            <p>We've attached a calendar invite to this email so you don't forget!</p>
-            <p>We look forward to seeing you.</p>
+            <p>Once your payment is confirmed by our team, your status will update to CONFIRMED and you will receive an Official Receipt.</p>
+            <p>We've attached a tentative calendar invite to this email so you can block off the time!</p>
+            <p>Best regards,<br>E.star SleekNails Team</p>
           </div>
         `,
         attachments: [

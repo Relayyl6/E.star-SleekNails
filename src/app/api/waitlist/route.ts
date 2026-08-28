@@ -45,6 +45,23 @@ export async function POST(request: Request) {
           </div>
         `
       });
+      
+      // Send email to client
+      await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: [lowerEmail],
+        subject: `Waitlist Request Received - E.star SleekNails`,
+        html: `
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+            <h1 style="color: #1A1414;">You're on the Waitlist!</h1>
+            <p>Hi there,</p>
+            <p>We've successfully added you to the waitlist for <strong>${date}</strong>.</p>
+            <p>If a slot opens up on that day, we will contact you immediately at this email address to see if you're still interested in booking.</p>
+            <p>Thank you for choosing E.star SleekNails!</p>
+            <p>Best regards,<br>E.star SleekNails Team</p>
+          </div>
+        `
+      });
     }
 
     return NextResponse.json(
