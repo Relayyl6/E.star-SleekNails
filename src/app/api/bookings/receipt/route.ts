@@ -7,7 +7,8 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
-    const sessionCookie = cookies().get('session')?.value;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
     if (!sessionCookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

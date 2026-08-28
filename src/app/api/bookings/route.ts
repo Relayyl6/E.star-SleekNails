@@ -13,7 +13,8 @@ export async function GET(request: Request) {
     const db = getAdminDb();
     
     if (type === 'full') {
-      const sessionCookie = cookies().get('session')?.value;
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('session')?.value;
       if (!sessionCookie) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
@@ -357,7 +358,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const sessionCookie = cookies().get('session')?.value;
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
     if (!sessionCookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
