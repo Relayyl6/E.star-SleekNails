@@ -56,8 +56,23 @@ export default function VendorDashboardPage() {
     fetchBookings();
   }, []);
 
-  const updateBookingStatus = async (id: string, newStatus: string) => {
+  const updateBookingStatus = async (id: string, newStatus: string, currentStatus?: string) => {
+    if (newStatus === 'CANCELLED') {
+      if (!window.confirm("Are you sure you want to cancel this booking? An email will be sent to the client.")) return;
+    }
     try {
+      if (currentStatus === 'WAITLIST' && newStatus === 'CANCELLED') {
+        // Waitlist entries are simply deleted
+        const res = await fetch(`/api/waitlist?id=${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          toast.success('Removed from waitlist');
+          fetchBookings();
+        } else {
+          toast.error('Failed to remove from waitlist');
+        }
+        return;
+      }
+      
       const res = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -400,7 +415,7 @@ export default function VendorDashboardPage() {
                     )}
                     {booking.status?.toUpperCase() !== 'CANCELLED' && booking.status?.toUpperCase() !== 'COMPLETED' && (
                       <button 
-                        onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'CANCELLED'); }}
+                        onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'CANCELLED', booking.status); }}
                         className="flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-lg text-sm font-bold transition-colors text-center"
                       >
                         Cancel

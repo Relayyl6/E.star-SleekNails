@@ -90,7 +90,7 @@ export default function MyBookingsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleCancel = async (id: string) => {
-    if (!confirm("Are you sure you want to cancel this booking? This action cannot be undone and your deposit may be forfeited according to the policy.")) return;
+    if (!window.confirm("Are you sure you want to cancel this appointment? This action cannot be undone.")) return;
     
     try {
       const res = await fetch('/api/bookings', {

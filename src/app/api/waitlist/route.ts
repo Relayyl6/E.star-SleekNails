@@ -125,3 +125,38 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+    if (!sessionCookie) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
+    let decodedClaims;
+    try {
+      decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+
+    const adminDb = getAdminDb();
+    const docRef = adminDb.collection('waitlist').doc(id);
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const data = docSnap.data();
+
+    if (!decodedClaims.admin && data?.email !== decodedClaims.email) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await docRef.delete();
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
