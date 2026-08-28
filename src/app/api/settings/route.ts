@@ -1,8 +1,26 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase/admin';
 
+import { cookies } from 'next/headers';
+import { getAdminAuth } from '@/lib/firebase/admin';
+
 export async function POST(req: Request) {
   try {
+    const sessionCookie = cookies().get('session')?.value;
+    if (!sessionCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    let decodedClaims;
+    try {
+      decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+      if (!decodedClaims.admin) {
+        return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
+      }
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+    }
+
     const body = await req.json();
     const db = getAdminDb();
     

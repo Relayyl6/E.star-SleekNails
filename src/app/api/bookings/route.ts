@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebase/admin';
+import { getAdminDb, getAdminAuth } from '@/lib/firebase/admin';
 import { Resend } from 'resend';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,8 +13,30 @@ export async function GET(request: Request) {
     const db = getAdminDb();
     
     if (type === 'full') {
+      const sessionCookie = cookies().get('session')?.value;
+      if (!sessionCookie) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      
+      let decodedClaims;
+      try {
+        decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+      } catch (error) {
+        return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+      }
+
       const email = searchParams.get('email');
       const userId = searchParams.get('userId');
+      
+      // If a non-admin tries to fetch all bookings, block them
+      if (!userId && !email && !decodedClaims.admin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      
+      // If a non-admin tries to fetch someone else's bookings, block them
+      if (!decodedClaims.admin && (userId !== decodedClaims.uid && email !== decodedClaims.email)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
       if (userId && email) {
         const lowerEmail = email.toLowerCase().trim();
         const promises = [
@@ -273,7 +296,7 @@ export async function POST(request: Request) {
             <p>Your appointment has been successfully booked!</p>
             <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p style="margin:0 0 10px 0;"><strong>Reference:</strong> ${ref}</p>
-              <p style="margin:0 0 10px 0;"><strong>Date:</strong> ${new Date(date).toLocaleDateString()}</p>
+              <p style="margin:0 0 10px 0;"><strong>Date:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()}</p>
               <p style="margin:0 0 10px 0;"><strong>Time:</strong> ${time}</p>
               <h3 style="margin: 20px 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Services Booked</h3>
               ${itemsHtml}
@@ -313,7 +336,7 @@ export async function POST(request: Request) {
               <p><strong>Email:</strong> ${email}</p>
               <p><strong>Phone:</strong> ${phone}</p>
               ${instagram ? `<p><strong>Instagram:</strong> @${instagram}</p>` : ''}
-              <p><strong>Date/Time:</strong> ${new Date(date).toLocaleDateString()} @ ${time}</p>
+              <p><strong>Date/Time:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()} @ ${time}</p>
               ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
               ${photoUrl ? `<p><strong>Inspiration Photo:</strong></p><img src="${photoUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" />` : ''}
               ${itemsHtml}
@@ -334,6 +357,18 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const sessionCookie = cookies().get('session')?.value;
+    if (!sessionCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    let decodedClaims;
+    try {
+      decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+    }
+
     const db = getAdminDb();
     const body = await request.json();
     const { id, status } = body;
@@ -351,6 +386,16 @@ export async function PATCH(request: Request) {
     
     const data = docSnap.data() as any;
     
+    // Security Check: Non-admins can only CANCEL their OWN bookings
+    if (!decodedClaims.admin) {
+      if (data.userId !== decodedClaims.uid && data.email !== decodedClaims.email) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      if (status !== 'CANCELLED') {
+        return NextResponse.json({ error: 'Forbidden: You can only cancel bookings' }, { status: 403 });
+      }
+    }
+    
     await docRef.update({ status });
     
     // Send email notification on cancellation
@@ -365,7 +410,7 @@ export async function PATCH(request: Request) {
         html: `
           <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
             <h1 style="color: #1A1414;">Hi ${data.firstName || 'there'},</h1>
-            <p>Your appointment on <strong>${new Date(data.date).toLocaleDateString()}</strong> at <strong>${data.time}</strong> has been successfully cancelled as requested.</p>
+            <p>Your appointment on <strong>${new Date(data.date + "T12:00:00").toLocaleDateString()}</strong> at <strong>${data.time}</strong> has been successfully cancelled as requested.</p>
             <p>If you have any questions or wish to reschedule, please visit our website.</p>
             <p>Best regards,<br/>E.star SleekNails Team</p>
           </div>
@@ -390,7 +435,7 @@ export async function PATCH(request: Request) {
             <ul>
               <li><strong>Ref:</strong> ${data.ref || id}</li>
               <li><strong>Customer:</strong> ${data.firstName} ${data.lastName} (${data.email})</li>
-              <li><strong>Date/Time:</strong> ${new Date(data.date).toLocaleDateString()} @ ${data.time}</li>
+              <li><strong>Date/Time:</strong> ${new Date(data.date + "T12:00:00").toLocaleDateString()} @ ${data.time}</li>
             </ul>
           </div>
         `

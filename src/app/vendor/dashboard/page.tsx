@@ -148,7 +148,7 @@ export default function VendorDashboardPage() {
             </div>
             <div class="text-right">
               <p style="color: #666; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Service Details</p>
-              <p style="margin: 0;">Date: <strong>${new Date(booking.date).toLocaleDateString()}</strong></p>
+              <p style="margin: 0;">Date: <strong>${new Date(booking.date + "T12:00:00").toLocaleDateString()}</strong></p>
               <p style="margin: 4px 0;">Time: <strong>${booking.time || 'N/A'}</strong></p>
             </div>
           </div>
@@ -350,7 +350,7 @@ export default function VendorDashboardPage() {
                     <div className="flex items-center gap-1.5 mb-1 text-gray-700">
                       <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       <span className="text-xs md:text-sm font-bold truncate">
-                        {new Date(booking.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {new Date(booking.date + "T12:00:00").toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     {booking.time && (
@@ -521,7 +521,7 @@ export default function VendorDashboardPage() {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Appointment</p>
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center">
                   <div>
-                    <p className="font-bold text-gray-900">{new Date(selectedBooking.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                    <p className="font-bold text-gray-900">{new Date(selectedBooking.date + "T12:00:00").toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                     <p className="text-sm text-gray-500 mt-1">{selectedBooking.time}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${

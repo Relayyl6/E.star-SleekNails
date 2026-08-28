@@ -159,7 +159,7 @@ export default function MyBookingsPage() {
             </div>
             <div class="text-right">
               <p style="color: #666; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;">Service Details</p>
-              <p style="margin: 0;">Date: <strong>${new Date(booking.date).toLocaleDateString()}</strong></p>
+              <p style="margin: 0;">Date: <strong>${new Date(booking.date + "T12:00:00").toLocaleDateString()}</strong></p>
               <p style="margin: 4px 0;">Time: <strong>${booking.time || 'N/A'}</strong></p>
             </div>
           </div>
@@ -247,7 +247,7 @@ export default function MyBookingsPage() {
                 <div className="flex-1 min-w-0 w-full">
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="font-bold text-lg truncate">
-                      {new Date(booking.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {new Date(booking.date + "T12:00:00").toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       {booking.time ? ` at ${booking.time}` : ''}
                     </h3>
                     <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-md uppercase ${booking.status?.toUpperCase() === 'CANCELLED' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'}`}>

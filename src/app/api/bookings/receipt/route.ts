@@ -2,8 +2,26 @@ import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { Resend } from 'resend';
 
+import { cookies } from 'next/headers';
+import { getAdminAuth } from '@/lib/firebase/admin';
+
 export async function POST(request: Request) {
   try {
+    const sessionCookie = cookies().get('session')?.value;
+    if (!sessionCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    let decodedClaims;
+    try {
+      decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+      if (!decodedClaims.admin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { bookingId } = body;
     
@@ -62,7 +80,7 @@ export async function POST(request: Request) {
               </tr>
               <tr>
                 <td style="padding: 5px 0;"><strong>Appointment Date:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">${new Date(data.date).toLocaleDateString()} at ${data.time}</td>
+                <td style="padding: 5px 0; text-align: right;">${data.date} at ${data.time}</td>
               </tr>
               <tr>
                 <td style="padding: 5px 0;"><strong>Status:</strong></td>
