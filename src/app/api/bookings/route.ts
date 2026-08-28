@@ -247,12 +247,17 @@ export async function POST(request: Request) {
     } catch(e) {}
 
     const [hours, minutesStr] = time.split(':');
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Missing services items' }, { status: 400 });
+    }
+
     const startDate = new Date(date);
-    startDate.setHours(parseInt(hours, 10));
-    startDate.setMinutes(parseInt(minutesStr, 10));
+    // Parse time in WAT (UTC+1)
+    startDate.setUTCHours(parseInt(hours, 10) - 1); 
+    startDate.setUTCMinutes(parseInt(minutesStr, 10));
     
     const endDate = new Date(startDate);
-    endDate.setMinutes(startDate.getMinutes() + durationMinutes);
+    endDate.setUTCMinutes(startDate.getUTCMinutes() + durationMinutes);
 
     const formatICSDate = (d: Date) => {
       return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';

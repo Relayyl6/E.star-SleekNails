@@ -1,5 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getAdminDb } from '@/lib/firebase/admin';
+import { getAdminDb, getAdminAuth } from '@/lib/firebase/admin';
+import { cookies } from 'next/headers';
+
+async function verifyAdmin() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session')?.value;
+  if (!sessionCookie) return null;
+  try {
+    const claims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+    if (!claims.admin) return null;
+    return claims;
+  } catch (e) {
+    return null;
+  }
+}
 
 export async function GET() {
   try {
@@ -16,8 +30,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!(await verifyAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
     const db = getAdminDb();
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
     const { id, ...data } = body;
     
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
@@ -32,6 +53,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    if (!(await verifyAdmin())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
