@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 import { getAdminDb, getAdminAuth } from '@/lib/firebase/admin';
 import { cookies } from 'next/headers';
