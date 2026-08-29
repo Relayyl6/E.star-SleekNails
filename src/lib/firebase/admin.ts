@@ -14,7 +14,7 @@ if (!getApps().length) {
           // Handle newline characters in the private key from env variables
           privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
         }),
-        storageBucket: 'ester-ec20e.appspot.com'
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'ester-ec20e.firebasestorage.app'
       });
       console.log('Firebase Admin initialized successfully');
     } else {
