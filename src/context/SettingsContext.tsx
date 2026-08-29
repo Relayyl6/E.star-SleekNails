@@ -64,9 +64,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             parsedHours = Object.values(parsedHours);
           }
           
+          const safeData = { ...data };
+          for (const key in defaultSettings) {
+            if (!safeData[key] && safeData[key] !== 0 && safeData[key] !== false) {
+              safeData[key] = (defaultSettings as any)[key];
+            }
+          }
+
           const newSettings = {
             ...defaultSettings,
-            ...data,
+            ...safeData,
             hours: parsedHours
           };
           
