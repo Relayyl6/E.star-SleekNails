@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+
+export const runtime = 'nodejs';
+
 import { getAdminDb } from '@/lib/firebase/admin';
 
 import { cookies } from 'next/headers';
