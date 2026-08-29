@@ -116,6 +116,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const clearCart = useCallback(() => {
+    setItems([]);
+    setBookingDetails({
+      date: null,
+      time: null,
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      notes: '',
+      photoUrl: null
+    });
+    setExpiresAt(null);
+    localStorage.removeItem('estar_booking_expires_at');
+  }, []);
+
   useEffect(() => {
     if (!expiresAt) return;
     const interval = setInterval(() => {
@@ -140,7 +156,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setTimeLeft(diff);
     }
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [expiresAt, clearCart]);
 
   const startTimer = useCallback(() => {
     const savedExpiresAt = localStorage.getItem('estar_booking_expires_at');
@@ -153,22 +169,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setExpiresAt(parseInt(savedExpiresAt, 10));
     }
   }, []);
-
-  const clearCart = () => {
-    setItems([]);
-    setBookingDetails({
-      date: null,
-      time: null,
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      notes: '',
-      photoUrl: null
-    });
-    setExpiresAt(null);
-    localStorage.removeItem('estar_booking_expires_at');
-  };
 
   return (
     <CartContext.Provider value={{ items, addItem, updateQuantity, removeItem, isOpen, setIsOpen, bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer }}>
