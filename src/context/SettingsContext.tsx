@@ -12,6 +12,7 @@ export type StoreSettings = {
   bio: string;
   hours: Array<{ day: string; open: string; close: string; isClosed: boolean }>;
   bankDetails?: string;
+  policyText?: string;
 };
 
 const defaultSettings: StoreSettings = {
@@ -64,19 +65,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           }
           
           const newSettings = {
-            name: data.name || defaultSettings.name,
-            phone: data.phone || defaultSettings.phone,
-            instagram: data.instagram || defaultSettings.instagram,
-            adminEmail: data.adminEmail || defaultSettings.adminEmail,
-            depositPercentage: data.depositPercentage ?? defaultSettings.depositPercentage,
-            heroImage: data.heroImage || defaultSettings.heroImage,
-            address: data.address || defaultSettings.address,
-            bio: data.bio || defaultSettings.bio,
-            bankDetails: data.bankDetails || defaultSettings.bankDetails,
+            ...defaultSettings,
+            ...data,
             hours: parsedHours
           };
           
-          setSettings(newSettings);
+          setSettings(newSettings as StoreSettings);
           localStorage.setItem('sleeknails_settings', JSON.stringify(newSettings));
         }
       } catch (error) {
