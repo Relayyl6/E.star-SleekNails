@@ -290,72 +290,76 @@ export async function POST(request: Request) {
 
     // Send emails via Resend
     if (process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: [email],
-        subject: `Booking Request Received: ${ref} (Action Required)`,
-        html: `
-          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-            <h1 style="color: #1A1414;">Hi ${firstName},</h1>
-            <p>We have successfully received your appointment request!</p>
-            <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffeeba;">
-              <strong>Action Required:</strong> Your booking is currently <strong>PENDING</strong>. Please log into your dashboard, download your invoice, and complete the payment instructions to secure your slot.
-            </div>
-            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin:0 0 10px 0;"><strong>Reference:</strong> ${ref}</p>
-              <p style="margin:0 0 10px 0;"><strong>Date:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()}</p>
-              <p style="margin:0 0 10px 0;"><strong>Time:</strong> ${time}</p>
-              <h3 style="margin: 20px 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Services Booked</h3>
-              ${itemsHtml}
-            </div>
-            <p>Once your payment is confirmed by our team, your status will update to CONFIRMED and you will receive an Official Receipt.</p>
-            <p>We've attached a tentative calendar invite to this email so you can block off the time!</p>
-            <p>Best regards,<br>E.star SleekNails Team</p>
-          </div>
-        `,
-        attachments: [
-          {
-            filename: 'invite.ics',
-            content: Buffer.from(icsString).toString('base64'),
-            contentType: 'text/calendar'
-          }
-        ]
-      });
-
-      let adminEmail = 'oseghaleleonard39@gmail.com';
       try {
-        const settingsDoc = await db.collection('settings').doc('store').get();
-        if (settingsDoc.exists) {
-          adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
-        }
-      } catch (e) {
-        console.error("Error fetching admin email for booking alert", e);
-      }
-
-      const adminEmailPayload: any = {
-        from: 'onboarding@resend.dev',
-        to: [adminEmail],
-        subject: `New Booking Alert: ${ref}`,
-        html: `
-          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #1A1414;">New Appointment Booked</h2>
-            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Phone:</strong> ${phone}</p>
-              ${instagram ? `<p><strong>Instagram:</strong> @${instagram}</p>` : ''}
-              <p><strong>Date/Time:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()} @ ${time}</p>
-              ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-              ${photoUrl ? `<p><strong>Inspiration Photo:</strong></p><img src="${photoUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" />` : ''}
-              ${itemsHtml}
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: [email],
+          subject: `Booking Request Received: ${ref} (Action Required)`,
+          html: `
+            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+              <h1 style="color: #1A1414;">Hi ${firstName},</h1>
+              <p>We have successfully received your appointment request!</p>
+              <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffeeba;">
+                <strong>Action Required:</strong> Your booking is currently <strong>PENDING</strong>. Please log into your dashboard, download your invoice, and complete the payment instructions to secure your slot.
+              </div>
+              <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin:0 0 10px 0;"><strong>Reference:</strong> ${ref}</p>
+                <p style="margin:0 0 10px 0;"><strong>Date:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()}</p>
+                <p style="margin:0 0 10px 0;"><strong>Time:</strong> ${time}</p>
+                <h3 style="margin: 20px 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Services Booked</h3>
+                ${itemsHtml}
+              </div>
+              <p>Once your payment is confirmed by our team, your status will update to CONFIRMED and you will receive an Official Receipt.</p>
+              <p>We've attached a tentative calendar invite to this email so you can block off the time!</p>
+              <p>Best regards,<br>E.star SleekNails Team</p>
             </div>
-          </div>
-        `
-      };
+          `,
+          attachments: [
+            {
+              filename: 'invite.ics',
+              content: Buffer.from(icsString).toString('base64'),
+              contentType: 'text/calendar'
+            }
+          ]
+        });
 
-      await resend.emails.send(adminEmailPayload);
+        let adminEmail = 'oseghaleleonard39@gmail.com';
+        try {
+          const settingsDoc = await db.collection('settings').doc('store').get();
+          if (settingsDoc.exists) {
+            adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
+          }
+        } catch (e) {
+          console.error("Error fetching admin email for booking alert", e);
+        }
+
+        const adminEmailPayload: any = {
+          from: 'onboarding@resend.dev',
+          to: [adminEmail],
+          subject: `New Booking Alert: ${ref}`,
+          html: `
+            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #1A1414;">New Appointment Booked</h2>
+              <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Phone:</strong> ${phone}</p>
+                ${instagram ? `<p><strong>Instagram:</strong> @${instagram}</p>` : ''}
+                <p><strong>Date/Time:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()} @ ${time}</p>
+                ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+                ${photoUrl ? `<p><strong>Inspiration Photo:</strong></p><img src="${photoUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" />` : ''}
+                ${itemsHtml}
+              </div>
+            </div>
+          `
+        };
+
+        await resend.emails.send(adminEmailPayload);
+      } catch (emailError) {
+        console.error("Failed to send booking emails:", emailError);
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Booking created' }, { status: 200 });
@@ -411,46 +415,50 @@ export async function PATCH(request: Request) {
     
     // Send email notification on cancellation
     if (status === 'CANCELLED' && data.email && process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      // Email to customer
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: [data.email],
-        subject: `Booking Cancelled: ${data.ref || id}`,
-        html: `
-          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-            <h1 style="color: #1A1414;">Hi ${data.firstName || 'there'},</h1>
-            <p>Your appointment on <strong>${new Date(data.date + "T12:00:00").toLocaleDateString()}</strong> at <strong>${data.time}</strong> has been successfully cancelled as requested.</p>
-            <p>If you have any questions or wish to reschedule, please visit our website.</p>
-            <p>Best regards,<br/>E.star SleekNails Team</p>
-          </div>
-        `
-      });
-      
-      // Alert Admin
-      let adminEmail = 'oseghaleleonard39@gmail.com';
       try {
-        const settingsDoc = await db.collection('settings').doc('store').get();
-        if (settingsDoc.exists) adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
-      } catch(e) {}
-      
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: [adminEmail],
-        subject: `Booking Cancelled Alert: ${data.ref || id}`,
-        html: `
-          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #1A1414;">Appointment Cancelled</h2>
-            <p>The following appointment was cancelled:</p>
-            <ul>
-              <li><strong>Ref:</strong> ${data.ref || id}</li>
-              <li><strong>Customer:</strong> ${data.firstName} ${data.lastName} (${data.email})</li>
-              <li><strong>Date/Time:</strong> ${new Date(data.date + "T12:00:00").toLocaleDateString()} @ ${data.time}</li>
-            </ul>
-          </div>
-        `
-      });
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        // Email to customer
+        await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: [data.email],
+          subject: `Booking Cancelled: ${data.ref || id}`,
+          html: `
+            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+              <h1 style="color: #1A1414;">Hi ${data.firstName || 'there'},</h1>
+              <p>Your appointment on <strong>${new Date(data.date + "T12:00:00").toLocaleDateString()}</strong> at <strong>${data.time}</strong> has been successfully cancelled as requested.</p>
+              <p>If you have any questions or wish to reschedule, please visit our website.</p>
+              <p>Best regards,<br/>E.star SleekNails Team</p>
+            </div>
+          `
+        });
+        
+        // Alert Admin
+        let adminEmail = 'oseghaleleonard39@gmail.com';
+        try {
+          const settingsDoc = await db.collection('settings').doc('store').get();
+          if (settingsDoc.exists) adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
+        } catch(e) {}
+        
+        await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: [adminEmail],
+          subject: `Booking Cancelled Alert: ${data.ref || id}`,
+          html: `
+            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #1A1414;">Appointment Cancelled</h2>
+              <p>The following appointment was cancelled:</p>
+              <ul>
+                <li><strong>Ref:</strong> ${data.ref || id}</li>
+                <li><strong>Customer:</strong> ${data.firstName} ${data.lastName} (${data.email})</li>
+                <li><strong>Date/Time:</strong> ${new Date(data.date + "T12:00:00").toLocaleDateString()} @ ${data.time}</li>
+              </ul>
+            </div>
+          `
+        });
+      } catch (emailError) {
+        console.error("Failed to send cancellation emails:", emailError);
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -28,40 +28,44 @@ export async function POST(request: Request) {
 
     // Send email to vendor
     if (process.env.RESEND_API_KEY) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: ['oseghaleleonard39@gmail.com'],
-        subject: `New Waitlist Entry for ${date}`,
-        html: `
-          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-            <h2 style="color: #1A1414;">New Waitlist Request</h2>
-            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Email:</strong> ${lowerEmail}</p>
-              <p><strong>Requested Date:</strong> ${date}</p>
-              <p><strong>Time of Request:</strong> ${new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' })}</p>
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: ['oseghaleleonard39@gmail.com'],
+          subject: `New Waitlist Entry for ${date}`,
+          html: `
+            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+              <h2 style="color: #1A1414;">New Waitlist Request</h2>
+              <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Email:</strong> ${lowerEmail}</p>
+                <p><strong>Requested Date:</strong> ${date}</p>
+                <p><strong>Time of Request:</strong> ${new Date().toLocaleString('en-US', { timeZone: 'Africa/Lagos' })}</p>
+              </div>
+              <p>If a slot opens up, you can contact them directly.</p>
             </div>
-            <p>If a slot opens up, you can contact them directly.</p>
-          </div>
-        `
-      });
-      
-      // Send email to client
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: [lowerEmail],
-        subject: `Waitlist Request Received - E.star SleekNails`,
-        html: `
-          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-            <h1 style="color: #1A1414;">You're on the Waitlist!</h1>
-            <p>Hi there,</p>
-            <p>We've successfully added you to the waitlist for <strong>${date}</strong>.</p>
-            <p>If a slot opens up on that day, we will contact you immediately at this email address to see if you're still interested in booking.</p>
-            <p>Thank you for choosing E.star SleekNails!</p>
-            <p>Best regards,<br>E.star SleekNails Team</p>
-          </div>
-        `
-      });
+          `
+        });
+        
+        // Send email to client
+        await resend.emails.send({
+          from: 'onboarding@resend.dev',
+          to: [lowerEmail],
+          subject: `Waitlist Request Received - E.star SleekNails`,
+          html: `
+            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+              <h1 style="color: #1A1414;">You're on the Waitlist!</h1>
+              <p>Hi there,</p>
+              <p>We've successfully added you to the waitlist for <strong>${date}</strong>.</p>
+              <p>If a slot opens up on that day, we will contact you immediately at this email address to see if you're still interested in booking.</p>
+              <p>Thank you for choosing E.star SleekNails!</p>
+              <p>Best regards,<br>E.star SleekNails Team</p>
+            </div>
+          `
+        });
+      } catch (emailError) {
+        console.error("Failed to send waitlist email:", emailError);
+      }
     }
 
     return NextResponse.json(

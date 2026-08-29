@@ -59,60 +59,64 @@ export async function POST(request: Request) {
       </tr>
     `).join('') || `<tr><td colspan="3" style="padding: 10px;">Custom Service</td></tr>`;
 
-    await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to: [data.email],
-      subject: `Your Receipt from E.star SleekNails - ${data.ref || data.id}`,
-      html: `
-        <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333; padding: 20px;">
-          <div style="text-align: center; border-bottom: 2px solid #1A1414; padding-bottom: 20px; margin-bottom: 20px;">
-            <h1 style="color: #1A1414; margin: 0;">OFFICIAL RECEIPT</h1>
-            <p style="color: #666; margin-top: 5px;">E.star SleekNails</p>
-          </div>
-          
-          <p>Hi <strong>${data.firstName}</strong>,</p>
-          <p>Thank you for your business! This email serves as your official receipt for your booking.</p>
-          
-          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 5px 0;"><strong>Reference:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">${data.ref || data.id}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Appointment Date:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">${data.date} at ${data.time}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Status:</strong></td>
-                <td style="padding: 5px 0; text-align: right; color: green; font-weight: bold;">CONFIRMED / PAID</td>
-              </tr>
-            </table>
-          </div>
+    try {
+      await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: [data.email],
+        subject: `Official Receipt - E.star SleekNails Booking (${data.ref || data.id})`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #ddd; padding: 20px;">
+            <div style="text-align: center; border-bottom: 2px solid #1A1414; padding-bottom: 20px; margin-bottom: 20px;">
+              <h1 style="color: #1A1414; margin: 0;">E.star SleekNails</h1>
+              <p style="color: #666; margin: 5px 0 0 0;">Official Payment Receipt</p>
+            </div>
+            
+            <p>Hi ${data.firstName || 'Valued Client'},</p>
+            <p>Your payment has been successfully confirmed. Your appointment is now <strong>fully secured</strong>.</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 5px 0;"><strong>Receipt No:</strong></td>
+                  <td style="padding: 5px 0; text-align: right;">${data.ref || data.id}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0;"><strong>Appointment Date:</strong></td>
+                  <td style="padding: 5px 0; text-align: right;">${data.date} at ${data.time}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 5px 0;"><strong>Status:</strong></td>
+                  <td style="padding: 5px 0; text-align: right; color: green; font-weight: bold;">CONFIRMED / PAID</td>
+                </tr>
+              </table>
+            </div>
 
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-            <thead>
-              <tr style="background-color: #f0f0f0;">
-                <th style="padding: 10px; text-align: left;">Service</th>
-                <th style="padding: 10px; text-align: center;">Qty</th>
-                <th style="padding: 10px; text-align: right;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-              <tr>
-                <td colspan="2" style="padding: 15px 10px; text-align: right; font-weight: bold; border-top: 2px solid #333;">Total Paid:</td>
-                <td style="padding: 15px 10px; text-align: right; font-weight: bold; font-size: 16px; border-top: 2px solid #333;">${String(data.total || '0').includes('₦') ? data.total : `₦${data.total || '0'}`}</td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <p style="text-align: center; color: #888; font-size: 12px; margin-top: 40px;">
-            Thank you for choosing E.star SleekNails! We look forward to seeing you.
-          </p>
-        </div>
-      `
-    });
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+              <thead>
+                <tr style="background-color: #f0f0f0;">
+                  <th style="padding: 10px; text-align: left;">Service</th>
+                  <th style="padding: 10px; text-align: center;">Qty</th>
+                  <th style="padding: 10px; text-align: right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+                <tr>
+                  <td colspan="2" style="padding: 15px 10px; text-align: right; font-weight: bold; border-top: 2px solid #333;">Total Paid:</td>
+                  <td style="padding: 15px 10px; text-align: right; font-weight: bold; font-size: 16px; border-top: 2px solid #333;">${String(data.total || '0').includes('₦') ? data.total : `₦${data.total || '0'}`}</td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <p style="text-align: center; color: #888; font-size: 12px; margin-top: 40px;">
+              Thank you for choosing E.star SleekNails! We look forward to seeing you.
+            </p>
+          </div>
+        `
+      });
+    } catch (emailError) {
+      console.error("Failed to send receipt email:", emailError);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
