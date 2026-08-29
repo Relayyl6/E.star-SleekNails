@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useCart } from '@/context/CartContext';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 
 const CATEGORIES = ["All", "Full Sets", "In-Fill", "Pedicure", "Nail Art", "Removal", "Add-ons"];
 
-export default function ServicesPage() {
+function ServicesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -264,5 +264,17 @@ export default function ServicesPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ServicesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen pt-32 pb-40 bg-[#FBF9F7] flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1A1414]"></div>
+      </div>
+    }>
+      <ServicesContent />
+    </Suspense>
   );
 }
