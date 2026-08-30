@@ -22,7 +22,7 @@ const defaultSettings: StoreSettings = {
   adminEmail: "oseghaleleonard39@gmail.com",
   depositPercentage: 30,
   heroImage: "",
-  address: "Lagos, Nigeria",
+  address: "Abuja, Nigeria",
   bio: "Specializing in acrylic, hardgel, and BIAB services, creating clean, detailed, and long-lasting nail sets.",
   bankDetails: "GTBank\n0123456789\nE.star SleekNails",
   hours: [

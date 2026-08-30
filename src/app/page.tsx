@@ -141,6 +141,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 5. Policies & Terms (compact) */}
+        <PolicySection />
+
       <div className="bg-surface relative z-20">
         {/* Tagline / Typographic Collage */}
         <section className="py-8 md:py-10 px-6 border-t border-black/5 relative flex items-center justify-center">
@@ -275,9 +278,6 @@ export default function HomePage() {
 
         {/* 4. Signature Sets Gallery */}
         <SignatureGallery />
-
-        {/* 5. Policies & Terms (compact) */}
-        <PolicySection />
 
         {/* Floating Actions */}
         <div className="fixed bottom-6 right-6 z-40 flex flex-row items-center gap-3">
