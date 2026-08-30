@@ -9,9 +9,10 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 export default function SuccessPage() {
   const { items, bookingDetails, setIsOpen, clearCart } = useCart();
   const [mounted, setMounted] = useState(false);
-  const [depositPercentage, setDepositPercentage] = useState(30);
+  const [depositAmount, setDepositAmount] = useState(5000);
+  const [bankDetails, setBankDetails] = useState("Moniepoint, 7049022919, E.star SleekNails Luxury studio/ E.star SleekNails");
   const [user, setUser] = useState<User | null>(null);
-  
+
   // Take a snapshot so we can clear the cart but still show the invoice!
   const [snapshotItems] = useState(items);
   const [snapshotDetails] = useState(bookingDetails);
@@ -21,15 +22,14 @@ export default function SuccessPage() {
     return sum + (priceNum * (item.quantity || 1));
   }, 0);
 
-  const depositAmount = Math.round(total * depositPercentage / 100);
-
   useEffect(() => {
     setMounted(true);
     setIsOpen(false);
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
-        if (data.depositPercentage != null) setDepositPercentage(data.depositPercentage);
+        if (data.depositAmount != null) setDepositAmount(data.depositAmount);
+        if (data.bankDetails) setBankDetails(data.bankDetails);
       })
       .catch(() => {});
     
@@ -153,7 +153,7 @@ export default function SuccessPage() {
 
           <div className="border-t border-gray-100 pt-6 mt-6">
             <p className="text-xs text-gray-500 font-medium mb-1">To permanently secure this booking, a deposit is required.</p>
-            <p className="text-[11px] text-gray-400">Please transfer <strong className="text-gray-700">{formatMoney(depositAmount)} ({depositPercentage}%)</strong> to GTBank: <strong className="text-gray-700">0123456789</strong> (Account: E.star SleekNails) and send the receipt to our WhatsApp.</p>
+            <p className="text-[11px] text-gray-400">Please transfer <strong className="text-gray-700">{formatMoney(depositAmount)}</strong> to <strong className="text-gray-700">{bankDetails}</strong> and send the receipt to our WhatsApp.</p>
           </div>
         </div>
 
@@ -219,11 +219,11 @@ export default function SuccessPage() {
           )}
 
           <a 
-            href={`https://wa.me/2347049022919?text=${encodeURIComponent(`Hi! I just booked an appointment on E.star SleekNails.\n\nBooking Ref: ${bookingRef}\nDeposit: ${formatMoney(depositAmount)} (${depositPercentage}% of ${formatMoney(total)})\n\nI am attaching my payment receipt below. 💅✨`)}`} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="w-full mt-4 flex items-center justify-center gap-3 bg-green-50 text-green-700 py-3 rounded-xl font-bold hover:bg-green-100 transition-all border border-green-200"
-          >
+              target="_blank" 
+              rel="noreferrer" 
+              href={`https://wa.me/2347049022919?text=${encodeURIComponent(`Hi! I just booked an appointment on E.star SleekNails.\n\nBooking Ref: ${bookingRef}\nDeposit: ${formatMoney(depositAmount)}\n\nI am attaching my payment receipt below. 💅✨`)}`} 
+              className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white py-3.5 rounded-xl font-bold hover:bg-[#1ebd5a] transition-all shadow-md active:scale-95"
+            >
              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.599-.187-.968-.306-1.554-.5-2.738-1.579-3.214-2.22-.058-.078-.771-1.02-.771-1.942 0-.923.479-1.378.648-1.555.151-.159.39-.236.621-.236.075 0 .145.002.207.005.184.008.277.021.401.32.155.372.531 1.297.578 1.393.047.096.078.209.02.327-.058.118-.088.191-.175.293-.087.103-.186.223-.263.31-.083.095-.172.199-.074.368.098.169.435.718.932 1.163.642.575 1.182.753 1.352.836.17.083.27.073.37-.04.101-.114.436-.508.552-.682.115-.174.229-.145.385-.088.156.058.986.465 1.155.55.17.085.283.128.324.198.041.07.041.404-.103.809z" /></svg>
              Send Receipt
           </a>

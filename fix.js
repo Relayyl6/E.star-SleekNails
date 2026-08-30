@@ -1,25 +1,18 @@
+const fs = require('fs');
+let content = fs.readFileSync('seed_services.js', 'utf8');
 
-const admin = require('firebase-admin');
-const serviceAccount = require('./service-account.json');
-if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-}
-const db = admin.firestore();
-(async () => {
-  const snapshot = await db.collection('bookings').get();
-  let count = 0;
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    if (data.date && data.date.includes('T')) {
-      const d = new Date(data.date);
-      d.setHours(d.getHours() + 1); // Adjust for Nigeria (UTC+1)
-      const pad = n => n.toString().padStart(2, '0');
-      const newDateStr = d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate());
-      await doc.ref.update({ date: newDateStr });
-      count++;
-      console.log('Fixed', doc.id, data.date, '->', newDateStr);
-    }
-  }
-  console.log('Fixed', count, 'bookings');
-})();
+content = content.replace(/images: \["https:\/\/images\.unsplash\.com[^"]+"\]/g, 'images: ["https://placehold.co/600x400/1a1414/ffffff?text=Image+Coming+Soon"]');
 
+content = content.replace(/name: "Plain Acrylic Full Set — (.*?)"/g, 'name: "$1 — Plain Acrylic Full Set"');
+content = content.replace(/name: "Plain Gel X Full Set — (.*?)"/g, 'name: "$1 — Plain Gel X Full Set"');
+content = content.replace(/name: "BIAB on Natural Nails — (.*?)"/g, 'name: "$1 — BIAB on Natural Nails"');
+content = content.replace(/name: "Plain Gel Stick-On Set — (.*?)"/g, 'name: "$1 — Plain Gel Stick-On Set"');
+
+// also replace standard hyphen if it was used
+content = content.replace(/name: "Plain Acrylic Full Set - (.*?)"/g, 'name: "$1 — Plain Acrylic Full Set"');
+content = content.replace(/name: "Plain Gel X Full Set - (.*?)"/g, 'name: "$1 — Plain Gel X Full Set"');
+content = content.replace(/name: "BIAB on Natural Nails - (.*?)"/g, 'name: "$1 — BIAB on Natural Nails"');
+content = content.replace(/name: "Plain Gel Stick-On Set - (.*?)"/g, 'name: "$1 — Plain Gel Stick-On Set"');
+
+
+fs.writeFileSync('seed_services.js', content);

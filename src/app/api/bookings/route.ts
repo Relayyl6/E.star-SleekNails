@@ -325,9 +325,9 @@ export async function POST(request: Request) {
           ]
         });
 
-        let adminEmail = 'oseghaleleonard39@gmail.com';
+        let adminEmail = 'peteratambaesther@gmail.com';
         try {
-          const settingsDoc = await db.collection('settings').doc('store').get();
+          const settingsDoc = await db.collection('storefront_config').doc('main').get();
           if (settingsDoc.exists) {
             adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
           }
@@ -434,9 +434,9 @@ export async function PATCH(request: Request) {
         });
         
         // Alert Admin
-        let adminEmail = 'oseghaleleonard39@gmail.com';
+        let adminEmail = 'peteratambaesther@gmail.com';
         try {
-          const settingsDoc = await db.collection('settings').doc('store').get();
+          const settingsDoc = await db.collection('storefront_config').doc('main').get();
           if (settingsDoc.exists) adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
         } catch(e) {}
         

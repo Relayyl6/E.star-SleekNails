@@ -10,7 +10,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'sonner';
 
-const CATEGORIES = ["All", "Full Sets", "In-Fill", "Pedicure", "Nail Art", "Removal", "Add-ons"];
+const CATEGORIES = ["All", "Acrylic Nail Set — Plain", "Extras", "Plain Gel X Nail Set", "BIAB on Natural Nails", "Gel Stick-On Set — Plain", "Toenails", "Others"];
 
 export default function ServicesPageClient() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export default function ServicesPageClient() {
       if (cached) {
         try {
           const rawData = JSON.parse(cached);
-          setServicesList(rawData.map((s: any) => ({ ...s, category: s.category || "Full Sets" })));
+          setServicesList(rawData.map((s: any) => ({ ...s, category: s.category || "Acrylic Nail Set — Plain" })));
           setLoading(false);
         } catch (e) {}
       }
@@ -45,7 +45,7 @@ export default function ServicesPageClient() {
 
         const data = rawData.map((service: any) => ({
           ...service,
-          category: service.category || "Full Sets"
+          category: service.category || "Acrylic Nail Set — Plain"
         }));
         setServicesList(data);
         localStorage.setItem('sleeknails_services', JSON.stringify(rawData));
@@ -222,16 +222,16 @@ export default function ServicesPageClient() {
         <h2 className="font-serif text-3xl md:text-4xl mb-10 text-[#1A1414] text-center">Explore by Category</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           {[
-            { name: "Full Sets", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80" },
-            { name: "In-Fill", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80" },
-            { name: "Pedicure", image: "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=600&q=80" },
-            { name: "Nail Art", image: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=600&q=80" },
-            { name: "Removal", image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80" },
-            { name: "Add-ons", image: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80" },
+            { name: "Acrylic Nail Set — Plain", image: "https://placehold.co/600x400/1a1414/ffffff.png?text=Acrylic+Nail+Set" },
+            { name: "Plain Gel X Nail Set", image: "https://placehold.co/600x400/1a1414/ffffff.png?text=Plain+Gel+X" },
+            { name: "BIAB on Natural Nails", image: "https://placehold.co/600x400/1a1414/ffffff.png?text=BIAB" },
+            { name: "Gel Stick-On Set — Plain", image: "https://placehold.co/600x400/1a1414/ffffff.png?text=Gel+Stick-On" },
+            { name: "Toenails", image: "https://placehold.co/600x400/1a1414/ffffff.png?text=Toenails" },
+            { name: "Extras", image: "https://placehold.co/600x400/1a1414/ffffff.png?text=Extras" },
           ].map((category) => (
             <Link
               key={category.name}
-              href={`/services?category=${category.name.toLowerCase().replace(' ', '-')}`}
+              href={`/services?category=${category.name.toLowerCase().replace(/ /g, '-')}`}
               className="group relative overflow-hidden rounded-2xl aspect-[4/3] bg-white shadow-sm hover:shadow-xl transition-all duration-300 flex items-end"
             >
               <Image

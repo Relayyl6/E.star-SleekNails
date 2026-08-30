@@ -6,25 +6,27 @@ export type StoreSettings = {
   phone: string;
   instagram: string;
   adminEmail: string;
-  depositPercentage: number;
+  depositAmount: number;
   heroImage: string;
   address: string;
   bio: string;
   hours: Array<{ day: string; open: string; close: string; isClosed: boolean }>;
   bankDetails?: string;
   policyText?: string;
+  mapUrl?: string;
 };
 
 const defaultSettings: StoreSettings = {
   name: "E.star SleekNails",
   phone: "+2347049022919",
-  instagram: "@estar_sleeknails",
-  adminEmail: "oseghaleleonard39@gmail.com",
-  depositPercentage: 30,
+  instagram: "@estar.sleeknails",
+  adminEmail: "peteratambaesther@gmail.com",
+  depositAmount: 5000,
   heroImage: "",
-  address: "Abuja, Nigeria",
+  address: "Abuja, Gwarimpa, Azah Scents in front of Drugmart and Greens 2nd Avenue gwarimpa",
+  mapUrl: "https://maps.app.goo.gl/C5wPhgWKkGxcmtL46?g_st=ic",
   bio: "Specializing in acrylic, hardgel, and BIAB services, creating clean, detailed, and long-lasting nail sets.",
-  bankDetails: "GTBank\n0123456789\nE.star SleekNails",
+  bankDetails: "Moniepoint, 7049022919, E.star SleekNails Luxury studio/ E.star SleekNails",
   hours: [
     { day: "Sunday", open: "14:00", close: "18:00", isClosed: true },
     { day: "Monday", open: "09:00", close: "17:00", isClosed: false },

@@ -12,27 +12,27 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [depositPercentage, setDepositPercentage] = useState(30); // default 30%
+  const [depositAmount, setDepositAmount] = useState(5000); // default 5000 NGN
 
   useEffect(() => {
     setMounted(true);
 
-    fetch('/api/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data.depositPercentage != null) {
-          setDepositPercentage(data.depositPercentage);
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.depositAmount != null) {
+          setDepositAmount(data.depositAmount);
         }
-      })
-      .catch(() => {});
+      } catch(e) {}
+    };
+    fetchSettings();
   }, []);
 
   const total = items.reduce((sum, item) => {
     const priceNum = parseInt(item.price.replace(/[^\d]/g, ''));
     return sum + (priceNum * item.quantity);
   }, 0);
-
-  const depositAmount = Math.round(total * depositPercentage / 100);
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount).replace('NGN', '₦');
@@ -124,7 +124,7 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                     <span>{formatMoney(total)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Deposit Required ({depositPercentage}%)</span>
+                    <span>Deposit Required</span>
                     <span>{formatMoney(depositAmount)}</span>
                   </div>
                   <div className="flex justify-between text-xl font-bold text-[#1A1414] pt-3 border-t border-black/5">

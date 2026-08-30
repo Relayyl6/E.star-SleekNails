@@ -11,13 +11,13 @@ export default function VendorSettingsPage() {
   const [settings, setSettings] = useState({
     storeName: 'E.star SleekNails',
     phone: '+2347049022919',
-    instagram: '@estar_sleeknails',
-    address: 'Lagos, Nigeria',
+    instagram: '@estar.sleeknails',
+    address: 'Abuja, Gwarimpa, Azah Scents in front of Drugmart and Greens 2nd Avenue gwarimpa',
     bio: '',
     heroImage: '',
-    depositPercentage: 30,
-    adminEmail: '',
-    bankDetails: 'GTBank\n0123456789\nE.star SleekNails',
+    depositAmount: 5000,
+    adminEmail: 'peteratambaesther@gmail.com',
+    bankDetails: 'Moniepoint, 7049022919, E.star SleekNails Luxury studio/ E.star SleekNails',
     hours: [
       { day: 'monday', open: '09:00', close: '18:00', isClosed: false },
       { day: 'tuesday', open: '09:00', close: '18:00', isClosed: false },
@@ -28,29 +28,28 @@ export default function VendorSettingsPage() {
       { day: 'sunday', open: '12:00', close: '17:00', isClosed: true },
     ],
     policyText: `1. Deposit & Payment
-- A non-refundable ₦10,000 deposit is required to secure your appointment.
-- Payment must be completed within 30 mins or your slot will be forfeited.
+- A non-refundable deposit of ₦5,000 is required to secure an appointment. This amount goes directly towards your service.
+- Appointments are only confirmed upon payment of the required deposit.
+- By making payment into the provided account, you acknowledge and agree to the booking policies stated above.
 
 2. Reschedule & Cancellation
-- Appointments may be rescheduled with at least 12 hours notice.
-- Late cancellations, no-shows or reschedules made within the 12 hour period will result in deposit forfeiture.
+- To reschedule or cancel your appointment without losing your deposit, kindly provide at least 24 hours' notice. Deposits may only be transferred once.
 
 3. Arrival
-- Please arrive on time.
-- A 15 min grace period applies after which a ₦5,000 lateness fee applies.
-- Arrivals after 20 mins may be rescheduled or cancelled.
+- A 20-minute grace period is allowed for lateness. Arrivals beyond this period will attract a ₦3,000 late fee.
+- Clients arriving more than 30 minutes late may have their appointment cancelled and their deposit forfeited.
 
 4. Prep & Add-ons
-- Nails must be bare & polish-free (unless soak-off or removal is booked).
-- Additional services without prior booking may not be accommodated.
+- Please arrive with clean, natural nails free of any product unless otherwise discussed.
+- If you require a soak-off of an existing set, kindly inform us.
+- Refills are only available for sets originally done by E.star Sleeknails.
 
 5. Health & Safety
-- Services cannot be done on nails with infections, wounds, or contagious skin conditions.
+- Services cannot be performed on severely damaged or wounded nails.
 
 6. Guests
-- Be polite and respectful; disruptive behavior may result in service refusal.
-- No children allowed.
-- 1 extra guest is permitted per appointment.`
+- Due to limited seating, only one accompanying guest is permitted.
+- Children and pets are not permitted within the workspace.`
   });
 
   const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -216,13 +215,12 @@ export default function VendorSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Required Deposit (%)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Required Deposit Amount (₦)</label>
                 <input 
                   type="number" 
                   min="0"
-                  max="100"
-                  value={settings.depositPercentage || 30}
-                  onChange={e => setSettings({...settings, depositPercentage: parseInt(e.target.value) || 0})}
+                  value={settings.depositAmount || 5000}
+                  onChange={e => setSettings({...settings, depositAmount: parseInt(e.target.value) || 0})}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414]" 
                 />
               </div>

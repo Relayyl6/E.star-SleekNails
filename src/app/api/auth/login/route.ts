@@ -5,7 +5,7 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 const ADMIN_EMAILS = [
   'oseghaleleonard39@gmail.com',
   'relayamin12@gmail.com',
-  'owner@example.com'
+  'peteratambaesther@gmail.com'
 ];
 
 export async function POST(request: Request) {

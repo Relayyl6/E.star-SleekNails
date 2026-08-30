@@ -13,16 +13,40 @@ export default function SignatureGallery() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    
     const checkOpen = () => {
       if (!settings.hours || settings.hours.length === 0) return;
       
-      const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const formatTime = (timeStr: string) => {
+        if (!timeStr) return '';
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}${m > 0 ? `:${m.toString().padStart(2, '0')}` : ''} ${ampm}`;
+      };
+
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const todayIdx = new Date().getDay();
+      const todayName = days[todayIdx];
       const todaySettings = settings.hours.find((h: any) => h.day.toLowerCase() === todayName);
       
+      const getNextOpen = (startOffset: number) => {
+        for (let i = startOffset; i <= 7; i++) {
+          const nextIdx = (todayIdx + i) % 7;
+          const s = settings.hours.find((h: any) => h.day.toLowerCase() === days[nextIdx]);
+          if (s && !s.isClosed) return { s, isTomorrow: i === 1 };
+        }
+        return null;
+      };
+
       if (!todaySettings || todaySettings.isClosed) {
         setIsOpen(false);
-        setTodayHours("Closed Today");
+        const next = getNextOpen(1);
+        if (next) {
+          const dayStr = next.isTomorrow ? 'tomorrow' : next.s.day.substring(0,3).charAt(0).toUpperCase() + next.s.day.substring(1,3);
+          setTodayHours(`Opens ${dayStr} at ${formatTime(next.s.open)}`);
+        } else {
+          setTodayHours("");
+        }
         return;
       }
       
@@ -38,18 +62,21 @@ export default function SignatureGallery() {
       
       if (currentTotalM >= openTotalM && currentTotalM < closeTotalM) {
         setIsOpen(true);
+        setTodayHours(`${formatTime(todaySettings.open)} – ${formatTime(todaySettings.close)}`);
       } else {
         setIsOpen(false);
+        if (currentTotalM < openTotalM) {
+          setTodayHours(`Opens today at ${formatTime(todaySettings.open)}`);
+        } else {
+          const next = getNextOpen(1);
+          if (next) {
+            const dayStr = next.isTomorrow ? 'tomorrow' : next.s.day.substring(0,3).charAt(0).toUpperCase() + next.s.day.substring(1,3);
+            setTodayHours(`Opens ${dayStr} at ${formatTime(next.s.open)}`);
+          } else {
+            setTodayHours("");
+          }
+        }
       }
-      
-      const formatTime = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        const h12 = h % 12 || 12;
-        return `${h12}${m > 0 ? `:${m.toString().padStart(2, '0')}` : ''} ${ampm}`;
-      };
-      
-      setTodayHours(`${formatTime(todaySettings.open)} - ${formatTime(todaySettings.close)}`);
     };
 
     checkOpen();
@@ -198,10 +225,10 @@ export default function SignatureGallery() {
               <span className={`relative inline-flex rounded-full h-3 w-3 ${isOpen ? 'bg-green-500' : 'bg-red-500'}`}></span>
             </span>
             <span className="font-medium text-white/90 tracking-wide text-sm md:text-base">
-              {isOpen ? 'Open now' : 'Closed'} {todayHours !== 'Closed Today' && `· ${todayHours}`}
+              {isOpen ? 'Open now' : 'Closed'}{todayHours ? ` · ${todayHours}` : ''}
             </span>
           </div>
-          <a href="https://maps.google.com/?q=Estar+Sleek+Nails" target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-white transition-colors inline-flex items-center gap-1 group text-sm md:text-base">
+          <a href={settings.mapUrl || "https://maps.app.goo.gl/C5wPhgWKkGxcmtL46?g_st=ic"} target="_blank" rel="noopener noreferrer" className="text-primary font-medium hover:text-white transition-colors inline-flex items-center gap-1 group text-sm md:text-base">
             Get directions 
             <span className="transition-transform group-hover:translate-x-1">→</span>
           </a>

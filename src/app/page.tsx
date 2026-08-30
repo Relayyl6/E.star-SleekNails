@@ -61,12 +61,10 @@ export default function HomePage() {
   };
 
   const categories = [
-    { name: "Full Sets", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=600&q=80" },
-    { name: "In-Fill", image: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=600&q=80" },
-    { name: "Pedicure", image: "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=600&q=80" },
-    { name: "Nail Art", image: "https://images.unsplash.com/photo-1595868840212-32b53443a290?auto=format&fit=crop&w=600&q=80" },
-    { name: "Removal", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80" },
-    { name: "Add-ons", image: "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=600&q=80" },
+    { name: "Acrylic Nail Set — Plain", image: "https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=600&q=80" },
+    { name: "Gel Stick-On Set — Plain", image: "https://images.unsplash.com/photo-1516975080661-460d3dce895b?auto=format&fit=crop&w=600&q=80" },
+    { name: "Toenails", image: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80" },
+    { name: "Extras", image: "https://images.unsplash.com/photo-1599839619722-39751411ea63?auto=format&fit=crop&w=600&q=80" },
   ];
 
   const socialImages = [
