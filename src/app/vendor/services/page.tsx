@@ -6,6 +6,7 @@ import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'sonner';
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiUploadCloud } from 'react-icons/fi';
+import { upload } from '@vercel/blob/client';
 
 export default function VendorServicesPage() {
   const [services, setServices] = useState<any[]>([]);
@@ -88,23 +89,12 @@ export default function VendorServicesPage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Use standard FormData to upload via Next.js API route
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
+        const newBlob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
         });
-
-        if (!res.ok) {
-          toast.error("Failed to upload image. Please try again.");
-          setUploading(false);
-          return;
-        }
-
-        const data = await res.json();
-        newUrls.push(data.url);
+        
+        newUrls.push(newBlob.url);
       }
       
       const combinedUrls = newUrls.join(', ');
