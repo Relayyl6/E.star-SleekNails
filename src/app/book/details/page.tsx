@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
+import { upload } from '@vercel/blob/client';
 
 export default function DetailsForm() {
   const router = useRouter();
@@ -61,22 +62,14 @@ export default function DetailsForm() {
       setBookingDetails(prev => ({ ...prev, photoUrl: tempUrl }));
       
       setIsUploading(true);
-      const uploadData = new FormData();
-      uploadData.append('file', file);
-      
       try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadData
+        const newBlob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
         });
-        if (res.ok) {
-          const data = await res.json();
-          // Update context with the real URL
-          setBookingDetails(prev => ({ ...prev, photoUrl: data.url }));
-        } else {
-          toast.error("Failed to upload image. Please try again.");
-          setBookingDetails(prev => ({ ...prev, photoUrl: null }));
-        }
+        
+        // Update context with the real URL
+        setBookingDetails(prev => ({ ...prev, photoUrl: newBlob.url }));
       } catch (error) {
         console.error("Upload failed", error);
         toast.error("Failed to upload image. Please try again.");

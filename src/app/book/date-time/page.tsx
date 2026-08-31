@@ -129,7 +129,23 @@ export default function DateTimeSelection() {
   };
 
   const bookedSlots = selectedDate ? (allBookings[toLocalDateStr(selectedDate)] || []) : [];
-  const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
+  
+  const availableSlots = allSlots.filter(slot => {
+    if (bookedSlots.includes(slot)) return false;
+    
+    // If selected date is today, hide past times
+    if (selectedDate && toLocalDateStr(selectedDate) === toLocalDateStr(new Date())) {
+      const isPM = slot.includes('PM');
+      let [hourStr] = slot.split(':');
+      let hour = parseInt(hourStr);
+      if (isPM && hour !== 12) hour += 12;
+      if (!isPM && hour === 12) hour = 0;
+      
+      const currentHour = new Date().getHours();
+      if (hour <= currentHour) return false;
+    }
+    return true;
+  });
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
