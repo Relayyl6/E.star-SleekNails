@@ -224,7 +224,7 @@ export default function DateTimeSelection() {
       const isClosed = isHoursLoaded && slotsForThisDay.length === 0;
       
       const dayBookings = allBookings[dateStr] || [];
-      const isFullyBooked = !isClosed && dayBookings.length >= slotsForThisDay.length;
+      const isFullyBooked = !isClosed && slotsForThisDay.length > 0 && dayBookings.length >= slotsForThisDay.length;
       const hasSomeBookings = dayBookings.length > 0 && !isFullyBooked;
       
       const isDisabled = isPast || isClosed || isFullyBooked;
