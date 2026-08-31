@@ -47,19 +47,25 @@ export default function DateTimeSelection() {
     const [openH] = daySettings.open.split(':').map(Number);
     const [closeH] = daySettings.close.split(':').map(Number);
 
+    const today = new Date();
+    const isToday = date.getFullYear() === today.getFullYear() && 
+                    date.getMonth() === today.getMonth() && 
+                    date.getDate() === today.getDate();
+    const currentHour = today.getHours();
+
     const toSlot = (h: number) => {
       const ampm = h >= 12 ? 'PM' : 'AM';
       const displayH = h > 12 ? h - 12 : (h === 0 ? 12 : h);
       return `${displayH.toString().padStart(2, '0')}:00 ${ampm}`;
     };
 
-    // If close is before or equal to open (e.g. accidentally set to 3AM instead of 3PM),
-    // still show all fixed slots from open time rather than blanking the whole day
-    if (closeH <= openH) {
-      return FIXED_SLOT_HOURS.filter(h => h >= openH).map(toSlot);
+    let validHours = FIXED_SLOT_HOURS.filter(h => h >= openH && (closeH <= openH || h < closeH));
+    
+    if (isToday) {
+      validHours = validHours.filter(h => h > currentHour);
     }
     
-    return FIXED_SLOT_HOURS.filter(h => h >= openH && h < closeH).map(toSlot);
+    return validHours.map(toSlot);
   };
 
   const allSlots = selectedDate ? generateSlotsForDate(selectedDate) : [];
@@ -130,22 +136,7 @@ export default function DateTimeSelection() {
 
   const bookedSlots = selectedDate ? (allBookings[toLocalDateStr(selectedDate)] || []) : [];
   
-  const availableSlots = allSlots.filter(slot => {
-    if (bookedSlots.includes(slot)) return false;
-    
-    // If selected date is today, hide past times
-    if (selectedDate && toLocalDateStr(selectedDate) === toLocalDateStr(new Date())) {
-      const isPM = slot.includes('PM');
-      let [hourStr] = slot.split(':');
-      let hour = parseInt(hourStr);
-      if (isPM && hour !== 12) hour += 12;
-      if (!isPM && hour === 12) hour = 0;
-      
-      const currentHour = new Date().getHours();
-      if (hour <= currentHour) return false;
-    }
-    return true;
-  });
+  const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
