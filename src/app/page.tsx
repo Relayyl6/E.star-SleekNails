@@ -19,13 +19,32 @@ export default function HomePage() {
   const [servicesList, setServicesList] = useState<any[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const CATEGORIES_TO_FEATURE = [
+    "Acrylic Nail Set — Plain",
+    "BIAB on Natural Nails",
+    "Plain Gel X Nail Set",
+    "Gel Stick-On Set — Plain",
+    "Toenails",
+    "Extras"
+  ];
+
+  const getFeaturedServices = (allServices: any[]) => {
+    const featured = [];
+    for (const cat of CATEGORIES_TO_FEATURE) {
+      const match = allServices.find(s => (s.category || "Acrylic Nail Set — Plain") === cat);
+      if (match) featured.push(match);
+    }
+    return featured;
+  };
+
   useEffect(() => {
     const fetchServices = async () => {
       // 1. Load from cache immediately
       const cached = localStorage.getItem('sleeknails_services');
       if (cached) {
         try {
-          setServicesList(JSON.parse(cached).slice(0, 6));
+          const rawData = JSON.parse(cached);
+          setServicesList(getFeaturedServices(rawData));
         } catch (e) {}
       }
 
@@ -37,7 +56,7 @@ export default function HomePage() {
           return;
         }
         const data = await res.json();
-        setServicesList(data.slice(0, 6)); // Update UI silently
+        setServicesList(getFeaturedServices(data)); // Update UI silently
         localStorage.setItem('sleeknails_services', JSON.stringify(data)); // Update cache
       } catch (error) {
         console.error("Error fetching services:", error);
@@ -203,7 +222,7 @@ export default function HomePage() {
                     className="bg-white rounded-3xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-primary flex flex-row justify-between gap-4 md:gap-6 group"
                   >
                     <div className="flex-1 flex flex-col min-w-0">
-                      <h3 className="font-serif text-xl md:text-2xl text-[#1A1414] mb-1 truncate">{service.name}</h3>
+                      <h3 className="font-serif text-xl md:text-2xl text-[#1A1414] mb-1">{service.name}</h3>
                       <p className="text-sm font-medium text-gray-500 mb-2">{service.duration} · {service.price}</p>
                       <p className="text-[13px] text-gray-700 leading-relaxed line-clamp-3 mb-2 flex-1">
                         {service.description || service.desc}

@@ -89,12 +89,12 @@ export default function VendorServicesPage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        const newBlob = await upload(file.name, file, {
-          access: 'public',
-          handleUploadUrl: '/api/upload',
-        });
+        // Use Firebase Storage
+        const fileRef = ref(storage, `services/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
+        const snapshot = await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
         
-        newUrls.push(newBlob.url);
+        newUrls.push(downloadURL);
       }
       
       const combinedUrls = newUrls.join(', ');
@@ -102,9 +102,12 @@ export default function VendorServicesPage() {
       toast.success(`Successfully uploaded ${files.length} image${files.length > 1 ? 's' : ''}!`);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to upload images");
+      toast.error("Failed to upload image. Please try again.");
     }
     setUploading(false);
+    
+    // reset file input
+    e.target.value = '';
   };
 
   const handleSave = async (e: React.FormEvent) => {

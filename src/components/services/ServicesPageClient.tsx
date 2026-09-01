@@ -10,7 +10,16 @@ import { db } from '@/lib/firebase/config';
 import { collection, getDocs } from 'firebase/firestore';
 import { toast } from 'sonner';
 
-const CATEGORIES = ["All", "Acrylic Nail Set — Plain", "Extras", "Plain Gel X Nail Set", "BIAB on Natural Nails", "Gel Stick-On Set — Plain", "Toenails", "Others"];
+const CATEGORIES = [
+  "All",
+  "Acrylic Nail Set — Plain",
+  "BIAB on Natural Nails",
+  "Plain Gel X Nail Set",
+  "Gel Stick-On Set — Plain",
+  "Toenails",
+  "Extras",
+  "Others"
+];
 
 export default function ServicesPageClient() {
   const router = useRouter();
@@ -26,13 +35,19 @@ export default function ServicesPageClient() {
   useEffect(() => {
     const fetchServices = async () => {
       const cached = localStorage.getItem('sleeknails_services');
-      if (cached) {
-        try {
-          const rawData = JSON.parse(cached);
-          setServicesList(rawData.map((s: any) => ({ ...s, category: s.category || "Acrylic Nail Set — Plain" })));
-          setLoading(false);
-        } catch (e) {}
-      }
+        if (cached) {
+          try {
+            const rawData = JSON.parse(cached);
+            const data = rawData.map((s: any) => ({ ...s, category: s.category || "Acrylic Nail Set — Plain" }));
+            const sortedData = data.sort((a: any, b: any) => {
+              const indexA = CATEGORIES.indexOf(a.category);
+              const indexB = CATEGORIES.indexOf(b.category);
+              return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+            });
+            setServicesList(sortedData);
+            setLoading(false);
+          } catch (e) {}
+        }
 
       try {
         const res = await fetch('/api/services');
@@ -47,8 +62,16 @@ export default function ServicesPageClient() {
           ...service,
           category: service.category || "Acrylic Nail Set — Plain"
         }));
-        setServicesList(data);
-        localStorage.setItem('sleeknails_services', JSON.stringify(rawData));
+
+        // Sort services by CATEGORIES order
+        const sortedData = data.sort((a: any, b: any) => {
+          const indexA = CATEGORIES.indexOf(a.category);
+          const indexB = CATEGORIES.indexOf(b.category);
+          return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+        });
+
+        setServicesList(sortedData);
+        localStorage.setItem('sleeknails_services', JSON.stringify(sortedData));
       } catch (error) {
         console.error("Error fetching services:", error);
         if (!cached) toast.error('An error occurred while fetching services.');
@@ -136,7 +159,7 @@ export default function ServicesPageClient() {
                   }`}
                 >
                   <div className="flex-1 flex flex-col min-w-0">
-                    <h3 className="font-serif text-xl text-[#1A1414] mb-1 truncate">{service.name}</h3>
+                    <h3 className="font-serif text-xl text-[#1A1414] mb-1">{service.name}</h3>
                     <p className="text-sm font-medium text-gray-500 mb-2">{service.price} · {service.duration}</p>
                     <p className="text-[13px] text-gray-600 leading-relaxed line-clamp-3 mb-2">
                       {service.description || service.desc}
