@@ -393,12 +393,15 @@ export default function VendorDashboardPage() {
                       }`}>
                         {booking.status || 'PENDING'}
                       </span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteBooking(booking.id, isWaitlist); }}
-                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      {(booking.status?.toUpperCase() === 'CANCELLED' || isWaitlist) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteBooking(booking.id, isWaitlist); }}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          title="Delete permanently"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
                     </div>
                 </div>
 
@@ -431,14 +434,25 @@ export default function VendorDashboardPage() {
 
                 {/* 4. Status & Actions */}
                 <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-1/4 gap-3 mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-none border-gray-100">
-                  <span className={`hidden md:inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
-                    booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
-                    isConfirmed ? 'bg-green-100 text-green-700' : 
-                    isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {booking.status || 'PENDING'}
-                  </span>
+                  <div className="hidden md:flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ${
+                        booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
+                        isConfirmed ? 'bg-green-100 text-green-700' : 
+                        isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {booking.status || 'PENDING'}
+                      </span>
+                      {(booking.status?.toUpperCase() === 'CANCELLED' || isWaitlist) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteBooking(booking.id, isWaitlist); }}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete permanently"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
+                    </div>
                   
                   <div className="flex gap-2 w-full md:w-auto md:justify-end">
                     {booking.status?.toUpperCase() === 'PENDING' && (
