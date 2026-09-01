@@ -467,3 +467,42 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+    if (!sessionCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    let decodedClaims;
+    try {
+      decodedClaims = await getAdminAuth().verifySessionCookie(sessionCookie, true);
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+    }
+
+    if (!decodedClaims.admin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
+    }
+
+    const db = getAdminDb();
+    const docRef = db.collection('bookings').doc(id);
+    await docRef.delete();
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('DELETE Booking Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+

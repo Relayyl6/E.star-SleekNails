@@ -92,6 +92,32 @@ export default function VendorDashboardPage() {
     }
   };
 
+  const deleteBooking = async (id: string, isWaitlist: boolean = false) => {
+    if (!window.confirm("Are you sure you want to permanently delete this booking? This action cannot be undone.")) return;
+    
+    try {
+      if (isWaitlist) {
+        const res = await fetch(`/api/waitlist?id=${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          toast.success('Waitlist entry deleted');
+          fetchBookings();
+        } else toast.error('Failed to delete waitlist entry');
+        return;
+      }
+
+      const res = await fetch(`/api/bookings?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Booking deleted permanently');
+        fetchBookings();
+      } else {
+        toast.error('Failed to delete booking');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('An error occurred');
+    }
+  };
+
   const [sendingReceipt, setSendingReceipt] = useState(false);
 
   const sendReceipt = async (bookingId: string) => {
@@ -358,16 +384,22 @@ export default function VendorDashboardPage() {
                     {booking.phone && <p className="text-xs text-gray-400 mt-0.5">{booking.phone}</p>}
                   </div>
                   {/* Status Pill (Visible top-right on mobile) */}
-                  <div className="md:hidden ml-auto">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
-                      booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
-                      isConfirmed ? 'bg-green-100 text-green-700' : 
-                      isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {booking.status || 'PENDING'}
-                    </span>
-                  </div>
+                  <div className="md:hidden ml-auto flex items-center gap-1.5">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                        booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
+                        isConfirmed ? 'bg-green-100 text-green-700' : 
+                        isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {booking.status || 'PENDING'}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteBooking(booking.id, isWaitlist); }}
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    </div>
                 </div>
 
                 {/* Mobile Grid Wrapper for 2 & 3 */}
