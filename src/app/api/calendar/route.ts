@@ -42,8 +42,19 @@ export async function GET(request: Request) {
   }, 0);
   const end = new Date(start.getTime() + (totalMins || 60) * 60000);
 
-  const serviceList = (booking.items || []).map((i: any) => i.name).join(', ');
-  const description = `Services: ${serviceList}\nRef: ${ref}`;
+  // Fetch settings for studio location
+  const settingsDoc = await db.collection('settings').doc('general').get();
+  const settingsData = settingsDoc.exists ? settingsDoc.data() : {};
+  const location = settingsData?.address || 'Lagos, Nigeria';
+
+  // Build a detailed description including service names and their descriptions
+  const serviceDetails = (booking.items || []).map((i: any) => {
+    let text = `- ${i.name}`;
+    if (i.description) text += `\n  ${i.description}`;
+    return text;
+  }).join('\n\n');
+
+  const description = `Services Booked:\n${serviceDetails}\n\nReference Number: ${ref}`;
 
   const pad = (n: number) => n.toString().padStart(2, '0');
   const toICSDate = (d: Date) =>
@@ -56,7 +67,7 @@ export async function GET(request: Request) {
     gcalUrl.searchParams.set('text', 'E.star SleekNails Appointment');
     gcalUrl.searchParams.set('dates', `${toICSDate(start)}/${toICSDate(end)}`);
     gcalUrl.searchParams.set('details', description);
-    gcalUrl.searchParams.set('location', 'Lagos, Nigeria');
+    gcalUrl.searchParams.set('location', location);
     return NextResponse.redirect(gcalUrl.toString());
   }
 
@@ -73,7 +84,7 @@ export async function GET(request: Request) {
     `DTEND:${toICSDate(end)}`,
     'SUMMARY:E.star SleekNails Appointment',
     `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
-    'LOCATION:Lagos\\, Nigeria',
+    `LOCATION:${location.replace(/,/g, '\\,')}`,
     'STATUS:CONFIRMED',
     'END:VEVENT',
     'END:VCALENDAR',
