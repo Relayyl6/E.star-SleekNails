@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { db, storage } from '@/lib/firebase/config';
 import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'sonner';
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiUploadCloud } from 'react-icons/fi';
 import { upload } from '@vercel/blob/client';
@@ -88,12 +89,12 @@ export default function VendorServicesPage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        const newBlob = await upload(file.name, file, {
-          access: 'public',
-          handleUploadUrl: '/api/upload',
-        });
+        // Use Firebase Storage
+        const fileRef = ref(storage, `services/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
+        const snapshot = await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
         
-        newUrls.push(newBlob.url);
+        newUrls.push(downloadURL);
       }
       
       const combinedUrls = newUrls.join(', ');
