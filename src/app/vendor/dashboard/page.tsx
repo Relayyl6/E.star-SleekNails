@@ -530,6 +530,14 @@ export default function VendorDashboardPage() {
             </div>
             
             <div className="p-6 flex-1 space-y-8">
+              {/* Reference Number */}
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Reference Number</p>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <p className="font-mono font-bold tracking-wider text-gray-900">{selectedBooking.id}</p>
+                </div>
+              </div>
+
               {/* Customer */}
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Customer Information</p>
