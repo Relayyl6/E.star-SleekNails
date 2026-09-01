@@ -63,7 +63,8 @@ export default function DetailsForm() {
       
       setIsUploading(true);
       try {
-        const newBlob = await upload(file.name, file, {
+        const uniqueFilename = `inspo_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const newBlob = await upload(uniqueFilename, file, {
           access: 'public',
           handleUploadUrl: '/api/upload',
         });

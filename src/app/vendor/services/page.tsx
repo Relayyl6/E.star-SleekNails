@@ -88,7 +88,8 @@ export default function VendorServicesPage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        const newBlob = await upload(file.name, file, {
+        const uniqueFilename = `services_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const newBlob = await upload(uniqueFilename, file, {
           access: 'public',
           handleUploadUrl: '/api/upload',
         });
