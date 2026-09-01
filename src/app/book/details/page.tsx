@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
-import { auth, storage } from '@/lib/firebase/config';
+import { auth } from '@/lib/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { upload } from '@vercel/blob/client';
 
 export default function DetailsForm() {
   const router = useRouter();
@@ -63,12 +63,13 @@ export default function DetailsForm() {
       
       setIsUploading(true);
       try {
-        const fileRef = ref(storage, `inspo/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
-        const snapshot = await uploadBytes(fileRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const newBlob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+        });
         
         // Update context with the real URL
-        setBookingDetails(prev => ({ ...prev, photoUrl: downloadURL }));
+        setBookingDetails(prev => ({ ...prev, photoUrl: newBlob.url }));
       } catch (error) {
         console.error("Upload failed", error);
         toast.error("Failed to upload image. Please try again.");
