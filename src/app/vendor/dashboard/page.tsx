@@ -18,6 +18,14 @@ export default function VendorDashboardPage() {
     sortBy: 'date' // date, price
   });
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfig, setDeleteConfig] = useState({
+    startDate: '',
+    endDate: '',
+    status: 'ALL'
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchBookings = async () => {
     try {
       const [bookingsRes, waitlistRes] = await Promise.all([
@@ -34,7 +42,7 @@ export default function VendorDashboardPage() {
       
       if (waitlistRes.ok) {
         const waitlistData = await waitlistRes.json();
-        allData = [...allData, ...waitlistData];
+        allData = [...allData, ...waitlistData.map((w: any) => ({ ...w, isWaitlist: true, status: 'WAITLIST' }))];
       }
       
       // Sort by when it was booked (most recent first)
@@ -240,6 +248,33 @@ export default function VendorDashboardPage() {
     window.open(url, '_blank');
   };
 
+  const handleBulkDelete = async () => {
+    if (!window.confirm("Are you SURE you want to permanently delete these bookings? This cannot be undone!")) return;
+    setIsDeleting(true);
+    const toastId = toast.loading('Deleting bookings...');
+    try {
+      const res = await fetch('/api/bookings/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deleteConfig)
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success(`Deleted ${data.count} bookings successfully!`, { id: toastId });
+        setShowDeleteModal(false);
+        fetchBookings();
+      } else {
+        toast.error(data.error || 'Failed to delete bookings', { id: toastId });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('An error occurred during deletion', { id: toastId });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleExportCSV = () => {
     let filtered = [...bookings];
 
@@ -311,6 +346,13 @@ export default function VendorDashboardPage() {
       <div className="flex flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-serif text-[#1A1414]">Overview</h1>
         <div className="flex gap-2">
+          <button 
+            onClick={() => setShowDeleteModal(true)}
+            className="px-5 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-bold hover:bg-red-100 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Bulk Delete
+          </button>
           <button 
             onClick={() => setShowExportModal(true)}
             className="px-5 py-2.5 bg-[#1A1414] text-white rounded-xl text-sm font-bold hover:bg-black transition-colors flex items-center gap-2"
@@ -556,6 +598,73 @@ export default function VendorDashboardPage() {
                 className="w-full py-3.5 bg-primary text-white rounded-xl font-bold mt-4 hover:bg-[#E06633]/90 transition-colors"
               >
                 Download CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
+            <button 
+              onClick={() => !isDeleting && setShowDeleteModal(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-black"
+              disabled={isDeleting}
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <h2 className="text-2xl font-bold mb-2 font-serif text-red-600">Bulk Delete Bookings</h2>
+            <p className="text-sm text-gray-500 mb-6">Permanently delete bookings matching these filters. This action cannot be undone.</p>
+            
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Start Date</label>
+                  <input 
+                    type="date" 
+                    value={deleteConfig.startDate}
+                    onChange={e => setDeleteConfig({...deleteConfig, startDate: e.target.value})}
+                    disabled={isDeleting}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-black outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">End Date</label>
+                  <input 
+                    type="date" 
+                    value={deleteConfig.endDate}
+                    onChange={e => setDeleteConfig({...deleteConfig, endDate: e.target.value})}
+                    disabled={isDeleting}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-black outline-none" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Filter Status</label>
+                <select 
+                  value={deleteConfig.status}
+                  onChange={e => setDeleteConfig({...deleteConfig, status: e.target.value})}
+                  disabled={isDeleting}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:border-black outline-none appearance-none bg-white"
+                >
+                  <option value="ALL">All Statuses (DANGEROUS)</option>
+                  <option value="CANCELLED">Cancelled</option>
+                  <option value="COMPLETED">Completed (Receipts)</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="WAITLIST">Waitlist</option>
+                </select>
+              </div>
+
+              <button 
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="w-full py-3.5 bg-red-600 text-white rounded-xl font-bold mt-4 hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Permanently Delete Bookings'}
               </button>
             </div>
           </div>
