@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   const end = new Date(start.getTime() + (totalMins || 60) * 60000);
 
   // Fetch settings for studio location
-  const settingsDoc = await db.collection('settings').doc('general').get();
+  const settingsDoc = await db.collection('storefront_config').doc('main').get();
   const settingsData = settingsDoc.exists ? settingsDoc.data() : {};
   const location = settingsData?.address || 'Lagos, Nigeria';
 
