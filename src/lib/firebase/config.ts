@@ -4,13 +4,13 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB27UcbxtvovOciJDIlOXBAWCTfQtOm038",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "ester-ec20e.firebaseapp.com",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "ester-ec20e",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "ester-ec20e.firebasestorage.app",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "880267816480",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:880267816480:web:f7b86534fd4e2d94d75645",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-90N7R5EBQX"
+  apiKey: "AIzaSyB27UcbxtvovOciJDIlOXBAWCTfQtOm038",
+  authDomain: "ester-ec20e.firebaseapp.com",
+  projectId: "ester-ec20e",
+  storageBucket: "ester-ec20e.appspot.com",
+  messagingSenderId: "880267816480",
+  appId: "1:880267816480:web:f7b86534fd4e2d94d75645",
+  measurementId: "G-90N7R5EBQX"
 };
 
 // Initialize Firebase only if it hasn't been initialized already
