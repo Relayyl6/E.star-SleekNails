@@ -213,8 +213,15 @@ export async function POST(request: Request) {
       ? `<table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
           ${items.map((item: any) => `
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">${item.name} (x${item.quantity || 1})</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #ddd; text-align: right;">${item.price}</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #ddd;">
+                <div style="font-weight: bold;">${item.name} (x${item.quantity || 1})</div>
+                <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                  ${item.selectedLength ? `<div>&bull; Length: ${item.selectedLength.name}</div>` : ''}
+                  ${item.selectedDesign ? `<div>&bull; Design: ${item.selectedDesign.name}</div>` : ''}
+                  ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name}</div>`).join('') || ''}
+                </div>
+              </td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #ddd; text-align: right; vertical-align: top;">${item.price}</td>
             </tr>
           `).join('')}
           <tr>

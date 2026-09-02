@@ -50,6 +50,11 @@ export async function GET(request: Request) {
   // Build a detailed description including service names and their descriptions
   const serviceDetails = (booking.items || []).map((i: any) => {
     let text = `- ${i.name}`;
+    if (i.selectedLength) text += `\n  • Length: ${i.selectedLength.name}`;
+    if (i.selectedDesign) text += `\n  • Design: ${i.selectedDesign.name}`;
+    if (i.selectedExtras?.length > 0) {
+      i.selectedExtras.forEach((e: any) => text += `\n  • Extra: ${e.name}`);
+    }
     if (i.description) text += `\n  ${i.description}`;
     return text;
   }).join('\n\n');

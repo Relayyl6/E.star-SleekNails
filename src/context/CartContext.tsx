@@ -3,11 +3,18 @@ import { createContext, useContext, useState, ReactNode, useEffect, useCallback 
 
 export type CartItem = {
   id: string;
+  serviceId?: string;
   name: string;
   price: string;
+  basePrice?: number;
   duration: string;
   image: string;
   quantity: number;
+  
+  // Customizations
+  selectedLength?: { name: string; price: number };
+  selectedDesign?: { name: string; price: number };
+  selectedExtras?: Array<{ name: string; price: number }>;
 };
 
 export type BookingDetails = {

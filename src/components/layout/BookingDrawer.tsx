@@ -49,13 +49,25 @@ export default function BookingDrawer() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-serif text-lg leading-tight">{item.name}</h3>
-                    <button onClick={() => removeItem(item.id)} className="text-white/40 hover:text-white transition-colors">
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                  </div>
-                  <p className="text-sm text-white/50 mb-3">{item.duration} · {item.price}</p>
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-serif text-lg leading-tight">{item.name}</h3>
+                      <button onClick={() => removeItem(item.id)} className="text-white/40 hover:text-white transition-colors">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                      </button>
+                    </div>
+
+                    {/* Render Add-ons */}
+                    {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
+                      <div className="text-xs text-white/60 mb-2 space-y-0.5">
+                        {item.selectedLength && <div>• {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
+                        {item.selectedDesign && <div>• {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                        {item.selectedExtras?.map((ex, i) => (
+                          <div key={i}>• {ex.name} (+₦{ex.price.toLocaleString()})</div>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="text-sm text-white/50 mb-3">{item.duration} · {item.price}</p>
                   
                   {/* Custom Stepper matching user spec */}
                   <div className="flex items-center gap-3">

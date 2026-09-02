@@ -9,6 +9,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: 'instagram.com' },
       { protocol: 'https', hostname: 'www.instagram.com' },
+      { protocol: 'https', hostname: 'vtdc9cwfow687z69.public.blob.vercel-storage.com' }
     ],
   },
 };

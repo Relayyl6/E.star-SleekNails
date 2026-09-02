@@ -23,6 +23,14 @@ export default function VendorServicesPage() {
   const [desc, setDesc] = useState('');
   const [images, setImages] = useState(''); // Comma separated
 
+  // Add-on State
+  const [hasLengths, setHasLengths] = useState(false);
+  const [lengths, setLengths] = useState<any[]>([]);
+  const [hasDesignTiers, setHasDesignTiers] = useState(false);
+  const [designTiers, setDesignTiers] = useState<any[]>([]);
+  const [hasExtras, setHasExtras] = useState(false);
+  const [extras, setExtras] = useState<any[]>([]);
+
   useEffect(() => {
     fetchServices();
   }, []);
@@ -66,6 +74,12 @@ export default function VendorServicesPage() {
       setDuration(service.duration || '');
       setDesc(service.description || service.desc || '');
       setImages((service.images || [service.image || '']).join(', '));
+      setHasLengths(service.hasLengths || false);
+      setLengths(service.lengths || []);
+      setHasDesignTiers(service.hasDesignTiers || false);
+      setDesignTiers(service.designTiers || []);
+      setHasExtras(service.hasExtras || false);
+      setExtras(service.extras || []);
     } else {
       setEditingId(null);
       setName('');
@@ -74,6 +88,12 @@ export default function VendorServicesPage() {
       setDuration('');
       setDesc('');
       setImages('');
+      setHasLengths(false);
+      setLengths([]);
+      setHasDesignTiers(false);
+      setDesignTiers([]);
+      setHasExtras(false);
+      setExtras([]);
     }
     setIsDrawerOpen(true);
   };
@@ -165,15 +185,32 @@ export default function VendorServicesPage() {
         }
       }
 
+      let basePriceNum = 0;
+      if (price) {
+        const cleanPrice = price.toLowerCase().replace(/\s/g, '');
+        if (cleanPrice.endsWith('k')) {
+          basePriceNum = parseFloat(cleanPrice) * 1000;
+        } else {
+          basePriceNum = parseFloat(cleanPrice.replace(/[^0-9.]/g, ''));
+        }
+      }
+
       const payload = {
         id,
         name,
         category,
         price: finalPrice,
+        basePrice: isNaN(basePriceNum) ? 0 : basePriceNum,
         duration: finalDuration,
         description: desc,
         images: imagesArray,
-        image: imagesArray[0] || '' // Fallback
+        image: imagesArray[0] || '', // Fallback
+        hasLengths,
+        lengths,
+        hasDesignTiers,
+        designTiers,
+        hasExtras,
+        extras
       };
 
       const res = await fetch('/api/services', {
@@ -325,6 +362,70 @@ export default function VendorServicesPage() {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
                 <textarea required value={desc} onChange={e => setDesc(e.target.value)} rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414] resize-none" placeholder="Describe the service..." />
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 space-y-6">
+                <h3 className="font-serif text-lg font-bold text-[#1A1414]">Add-ons & Variations</h3>
+                
+                {/* Lengths */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="hasLengths" checked={hasLengths} onChange={e => setHasLengths(e.target.checked)} className="rounded border-gray-300 text-primary focus:ring-primary" />
+                    <label htmlFor="hasLengths" className="text-sm font-semibold text-gray-700">Requires Length Selection?</label>
+                  </div>
+                  {hasLengths && (
+                    <div className="pl-6 space-y-3">
+                      {lengths.map((opt, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <input type="text" placeholder="e.g. Medium" value={opt.name} onChange={e => { const newOpts = [...lengths]; newOpts[i].name = e.target.value; setLengths(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...lengths]; newOpts[i].price = Number(e.target.value); setLengths(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <button type="button" onClick={() => setLengths(lengths.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><FiX /></button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setLengths([...lengths, { name: '', price: 0 }])} className="text-xs font-bold text-primary hover:underline">+ Add Length Option</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Design Tiers */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="hasDesignTiers" checked={hasDesignTiers} onChange={e => setHasDesignTiers(e.target.checked)} className="rounded border-gray-300 text-primary focus:ring-primary" />
+                    <label htmlFor="hasDesignTiers" className="text-sm font-semibold text-gray-700">Requires Design Tier?</label>
+                  </div>
+                  {hasDesignTiers && (
+                    <div className="pl-6 space-y-3">
+                      {designTiers.map((opt, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <input type="text" placeholder="e.g. Basic Design" value={opt.name} onChange={e => { const newOpts = [...designTiers]; newOpts[i].name = e.target.value; setDesignTiers(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...designTiers]; newOpts[i].price = Number(e.target.value); setDesignTiers(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <button type="button" onClick={() => setDesignTiers(designTiers.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><FiX /></button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setDesignTiers([...designTiers, { name: '', price: 0 }])} className="text-xs font-bold text-primary hover:underline">+ Add Design Tier</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Extras */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="hasExtras" checked={hasExtras} onChange={e => setHasExtras(e.target.checked)} className="rounded border-gray-300 text-primary focus:ring-primary" />
+                    <label htmlFor="hasExtras" className="text-sm font-semibold text-gray-700">Allow Extras (Add-ons)?</label>
+                  </div>
+                  {hasExtras && (
+                    <div className="pl-6 space-y-3">
+                      {extras.map((opt, i) => (
+                        <div key={i} className="flex gap-2 items-center">
+                          <input type="text" placeholder="e.g. Gel Polish" value={opt.name} onChange={e => { const newOpts = [...extras]; newOpts[i].name = e.target.value; setExtras(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...extras]; newOpts[i].price = Number(e.target.value); setExtras(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <button type="button" onClick={() => setExtras(extras.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><FiX /></button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setExtras([...extras, { name: '', price: 0 }])} className="text-xs font-bold text-primary hover:underline">+ Add Extra Item</button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

@@ -12,12 +12,11 @@ import { toast } from 'sonner';
 
 const CATEGORIES = [
   "All",
-  "Acrylic Nail Set — Plain",
+  "Acrylic Nail Set - Plain",
   "BIAB on Natural Nails",
   "Plain Gel X Nail Set",
-  "Gel Stick-On Set — Plain",
+  "Gel Stick-On Set - Plain",
   "Toenails",
-  "Extras",
   "Others"
 ];
 
@@ -27,6 +26,12 @@ export default function ServicesPageClient() {
 
   const [activeCategory, setActiveCategory] = useState("All");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Customization Modal State
+  const [customizingService, setCustomizingService] = useState<any | null>(null);
+  const [selectedLength, setSelectedLength] = useState<any | null>(null);
+  const [selectedDesign, setSelectedDesign] = useState<any | null>(null);
+  const [selectedExtras, setSelectedExtras] = useState<any[]>([]);
   const [servicesList, setServicesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { items, addItem, updateQuantity, removeItem } = useCart();
@@ -88,7 +93,77 @@ export default function ServicesPageClient() {
       const formatted = CATEGORIES.find(c => c.toLowerCase().replace(/ /g, '-') === categoryParam);
       if (formatted) setActiveCategory(formatted);
     }
-  }, [searchParams]);
+    
+    const customizeId = searchParams.get('customize');
+    if (customizeId && servicesList.length > 0 && !customizingService) {
+      const service = servicesList.find(s => s.id === customizeId);
+      if (service && (service.hasLengths || service.hasDesignTiers || service.hasExtras)) {
+        setCustomizingService(service);
+        setSelectedLength(service.hasLengths && service.lengths?.length > 0 ? service.lengths[0] : null);
+        setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 ? service.designTiers[0] : null);
+        setSelectedExtras([]);
+      }
+    }
+  }, [searchParams, servicesList]);
+
+  const handleCustomize = (service: any) => {
+    if (service.hasLengths || service.hasDesignTiers || service.hasExtras) {
+      setCustomizingService(service);
+      setSelectedLength(service.hasLengths && service.lengths?.length > 0 ? service.lengths[0] : null);
+      setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 ? service.designTiers[0] : null);
+      setSelectedExtras([]);
+    } else {
+      // Direct add
+      addItem({ 
+        id: service.id + '-' + Date.now(), 
+        serviceId: service.id,
+        name: service.name, 
+        price: service.price,
+        basePrice: service.basePrice,
+        duration: service.duration, 
+        image: service.image || service.images?.[0] || '', 
+        quantity: 1 
+      }, true);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (!customizingService) return;
+    
+    if (customizingService.hasLengths && customizingService.lengths?.length > 0 && !selectedLength) {
+      toast.error('Please select a length');
+      return;
+    }
+    
+    if (customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && !selectedDesign) {
+      toast.error('Please select a design tier');
+      return;
+    }
+
+    // Calculate total
+    let total = customizingService.basePrice || 0;
+    if (selectedLength) total += selectedLength.price;
+    if (selectedDesign) total += selectedDesign.price;
+    selectedExtras.forEach(e => total += e.price);
+    
+    const formattedPrice = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total);
+    
+    addItem({ 
+      id: customizingService.id + '-' + Date.now(), 
+      serviceId: customizingService.id,
+      name: customizingService.name, 
+      price: formattedPrice,
+      basePrice: customizingService.basePrice,
+      duration: customizingService.duration, 
+      image: customizingService.image || customizingService.images?.[0] || '', 
+      quantity: 1,
+      selectedLength: selectedLength,
+      selectedDesign: selectedDesign,
+      selectedExtras: selectedExtras
+    }, true);
+    
+    setCustomizingService(null);
+  };
 
   const filteredServices = activeCategory === "All"
     ? servicesList
@@ -174,9 +249,16 @@ export default function ServicesPageClient() {
                   </div>
 
                   <div className="flex flex-col items-end justify-between shrink-0 gap-3">
-                    {!isSelected ? (
+                    {(service.hasLengths || service.hasDesignTiers || service.hasExtras) ? (
                       <button
-                        onClick={toggleSelect}
+                        onClick={() => handleCustomize(service)}
+                        className="px-4 py-1.5 rounded-xl text-[13px] font-bold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap"
+                      >
+                        Customize & Select
+                      </button>
+                    ) : !isSelected ? (
+                      <button
+                        onClick={() => handleCustomize(service)}
                         className="px-4 py-1.5 rounded-xl text-[13px] font-bold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap"
                       >
                         Select
@@ -237,6 +319,107 @@ export default function ServicesPageClient() {
             <button className="absolute top-4 right-4 bg-black/50 text-white rounded-full p-2 hover:bg-black">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Customization Modal */}
+      {customizingService && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-end md:items-center justify-center p-4" onClick={() => setCustomizingService(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in slide-in-from-bottom-8 md:zoom-in-95" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div>
+                <h2 className="text-xl font-serif font-bold text-[#1A1414]">{customizingService.name}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Customize your service</p>
+              </div>
+              <button onClick={() => setCustomizingService(null)} className="p-2 text-gray-400 hover:text-black bg-white rounded-full shadow-sm hover:bg-gray-100 transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-8 flex-1">
+              {customizingService.hasLengths && customizingService.lengths?.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-bold text-[#1A1414] flex items-center justify-between">
+                    Select Length <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Required</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {customizingService.lengths.map((len: any) => (
+                      <label key={len.name} onClick={() => setSelectedLength(len)} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${selectedLength?.name === len.name ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedLength?.name === len.name ? 'border-primary' : 'border-gray-300'}`}>
+                            {selectedLength?.name === len.name && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                          </div>
+                          <span className="font-medium text-gray-800">{len.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(len.price)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  <h3 className="font-bold text-[#1A1414] flex items-center justify-between">
+                    Design Tier <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Required</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {customizingService.designTiers.map((tier: any) => (
+                      <label key={tier.name} onClick={() => setSelectedDesign(tier)} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${selectedDesign?.name === tier.name ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedDesign?.name === tier.name ? 'border-primary' : 'border-gray-300'}`}>
+                            {selectedDesign?.name === tier.name && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                          </div>
+                          <span className="font-medium text-gray-800">{tier.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {customizingService.hasExtras && customizingService.extras?.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  <h3 className="font-bold text-[#1A1414] flex items-center justify-between">
+                    Extras & Add-ons <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Optional</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {customizingService.extras.map((ex: any) => {
+                      const isChecked = selectedExtras.some(e => e.name === ex.name);
+                      return (
+                        <label key={ex.name} onClick={(e) => {
+                          e.preventDefault();
+                          if (isChecked) {
+                            setSelectedExtras(selectedExtras.filter(e => e.name !== ex.name));
+                          } else {
+                            setSelectedExtras([...selectedExtras, ex]);
+                          }
+                        }} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${isChecked ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${isChecked ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                              {isChecked && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                            <span className="font-medium text-gray-800">{ex.name}</span>
+                          </div>
+                          <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] relative z-10">
+              <button 
+                onClick={handleAddToCart}
+                className="w-full py-4 bg-[#1A1414] text-white rounded-xl font-bold text-lg hover:bg-black transition-colors shadow-lg"
+              >
+                Add to Booking
+              </button>
+            </div>
           </div>
         </div>
       )}

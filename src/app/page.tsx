@@ -20,12 +20,12 @@ export default function HomePage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const CATEGORIES_TO_FEATURE = [
-    "Acrylic Nail Set — Plain",
+    "Acrylic Nail Set - Plain",
     "BIAB on Natural Nails",
     "Plain Gel X Nail Set",
-    "Gel Stick-On Set — Plain",
+    "Gel Stick-On Set - Plain",
     "Toenails",
-    "Extras"
+    "Others"
   ];
 
   const getFeaturedServices = (allServices: any[]) => {
@@ -236,27 +236,34 @@ export default function HomePage() {
                     </div>
                     
                     <div className="flex flex-col items-end justify-between shrink-0 gap-3">
-                      {!isSelected ? (
-                        <button
-                          onClick={() => addItem({ ...service, quantity: 1 }, false)}
-                          onDoubleClick={() => router.push('/services')}
-                          className="px-4 py-1.5 rounded-xl text-[13px] font-bold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap select-none"
-                        >
-                          Select
-                        </button>
-                      ) : (
-                        <div className="flex items-center bg-primary text-white rounded-full px-1 py-1 shadow-md scale-90 origin-top-right">
-                          <button 
-                            onClick={() => updateQuantity(service.id, -1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-primary font-bold text-lg hover:bg-white/90 transition-colors"
-                          >-</button>
-                          <span className="w-6 text-center text-sm font-bold">{quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(service.id, 1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-primary font-bold text-lg hover:bg-white/90 transition-colors"
-                          >+</button>
-                        </div>
-                      )}
+                        {(service.hasLengths || service.hasDesignTiers || service.hasExtras) ? (
+                          <button
+                            onClick={() => router.push(`/services?customize=${service.id}`)}
+                            className="px-4 py-1.5 rounded-xl text-[13px] font-bold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap select-none"
+                          >
+                            Customize
+                          </button>
+                        ) : !isSelected ? (
+                          <button
+                            onClick={() => addItem({ ...service, quantity: 1 }, false)}
+                            onDoubleClick={() => router.push('/services')}
+                            className="px-4 py-1.5 rounded-xl text-[13px] font-bold transition-colors bg-[#F8D9CE] text-[#1A1414] hover:bg-primary hover:text-white whitespace-nowrap select-none"
+                          >
+                            Select
+                          </button>
+                        ) : (
+                          <div className="flex items-center bg-primary text-white rounded-full px-1 py-1 shadow-md scale-90 origin-top-right">
+                            <button 
+                              onClick={() => updateQuantity(service.id, -1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-primary font-bold text-lg hover:bg-white/90 transition-colors"
+                            >-</button>
+                            <span className="w-6 text-center text-sm font-bold">{quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(service.id, 1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-full bg-white text-primary font-bold text-lg hover:bg-white/90 transition-colors"
+                            >+</button>
+                          </div>
+                        )}
 
                       <div 
                         className="relative w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-sm mt-auto cursor-pointer"

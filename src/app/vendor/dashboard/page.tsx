@@ -213,9 +213,16 @@ export default function VendorDashboardPage() {
             <tbody>
               ${booking.items?.map((item: any) => `
                 <tr>
-                  <td>${item.name}</td>
-                  <td>${item.quantity || 1}</td>
-                  <td style="text-align: right;">${item.price}</td>
+                  <td>
+                    <div style="font-weight: bold;">${item.name}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                      ${item.selectedLength ? `<div>&bull; Length: ${item.selectedLength.name}</div>` : ''}
+                      ${item.selectedDesign ? `<div>&bull; Design: ${item.selectedDesign.name}</div>` : ''}
+                      ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name}</div>`).join('') || ''}
+                    </div>
+                  </td>
+                  <td style="vertical-align: top;">${item.quantity || 1}</td>
+                  <td style="text-align: right; vertical-align: top;">${item.price}</td>
                 </tr>
               `).join('') || `<tr><td>Custom Service</td><td>1</td><td style="text-align: right;">-</td></tr>`}
               <tr class="total-row">
@@ -732,6 +739,13 @@ export default function VendorDashboardPage() {
                     <div key={idx} className="flex justify-between items-start">
                       <div>
                         <p className="font-bold text-sm text-gray-900">{item.name}</p>
+                        <div className="text-xs text-gray-500 mt-1 mb-1 space-y-0.5">
+                          {item.selectedLength && <div>• Length: {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
+                          {item.selectedDesign && <div>• Design: {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                          {item.selectedExtras?.map((e: any, i: number) => (
+                            <div key={i}>• {e.name} (+₦{e.price.toLocaleString()})</div>
+                          ))}
+                        </div>
                         <p className="text-xs text-gray-500">{item.duration}</p>
                       </div>
                       <p className="font-bold text-sm text-gray-900">{item.price}</p>

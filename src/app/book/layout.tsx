@@ -106,8 +106,20 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-[#1A1414] truncate">{item.name}</p>
-                        <p className="text-sm text-gray-500">{item.duration}</p>
-                        <p className="text-primary font-semibold text-sm">{item.price}</p>
+                        {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
+                          <div className="text-xs text-gray-500 mb-1 space-y-0.5">
+                            {item.selectedLength && <div>+ {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
+                            {item.selectedDesign && <div>+ {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                            {item.selectedExtras?.map((ex, i) => (
+                              <div key={i}>+ {ex.name} (+₦{ex.price.toLocaleString()})</div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2 items-center mt-1">
+                          <p className="text-sm text-gray-500">{item.duration}</p>
+                          <span className="text-gray-300 text-xs">•</span>
+                          <p className="text-primary font-semibold text-sm">{item.price}</p>
+                        </div>
                       </div>
                       <div className="flex flex-col items-center justify-between h-16 bg-gray-50 rounded-lg w-8">
                         <button onClick={() => updateQuantity(item.id, 1)} className="h-1/3 w-full flex items-center justify-center text-gray-500 hover:text-black">+</button>

@@ -173,14 +173,21 @@ export default function MyBookingsPage() {
               </tr>
             </thead>
             <tbody>
-              ${booking.items?.map((item: any) => `
-                <tr>
-                  <td>${item.name}</td>
-                  <td>${item.quantity || 1}</td>
-                  <td style="text-align: right;">${item.price}</td>
-                </tr>
-              `).join('') || `<tr><td>Custom Service</td><td>1</td><td style="text-align: right;">-</td></tr>`}
-              <tr class="total-row">
+                ${booking.items?.map((item: any) => `
+                  <tr>
+                    <td>
+                      <div>${item.name}</div>
+                      <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                        ${item.selectedLength ? `<div>&bull; Length: ${item.selectedLength.name}</div>` : ''}
+                        ${item.selectedDesign ? `<div>&bull; Design: ${item.selectedDesign.name}</div>` : ''}
+                        ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name}</div>`).join('') || ''}
+                      </div>
+                    </td>
+                    <td style="vertical-align: top;">${item.quantity || 1}</td>
+                    <td style="text-align: right; vertical-align: top;">${item.price}</td>
+                  </tr>
+                `).join('') || `<tr><td>Custom Service</td><td>1</td><td style="text-align: right;">-</td></tr>`}
+                <tr class="total-row">
                 <td colspan="2" style="text-align: right; padding-top: 20px;">Total Amount:</td>
                 <td style="text-align: right; font-size: 18px; padding-top: 20px;">${String(booking.total || '0').includes('₦') ? booking.total : `₦${booking.total || '0'}`}</td>
               </tr>
@@ -299,14 +306,25 @@ export default function MyBookingsPage() {
                   </div>
                   <div>
                     <p className="text-gray-500 mb-1">Services Breakdown</p>
-                    <ul className="space-y-1 mb-4">
-                      {booking.items?.map((item: any, idx: number) => (
-                        <li key={idx} className="flex justify-between">
-                          <span>{item.name} x{item.quantity || 1}</span>
-                          <span className="font-medium">{item.price}</span>
-                        </li>
-                      ))}
-                    </ul>
+                      <ul className="space-y-3 mb-4">
+                        {booking.items?.map((item: any, idx: number) => (
+                          <li key={idx} className="flex flex-col">
+                            <div className="flex justify-between w-full">
+                              <span className="font-medium text-gray-900">{item.name} x{item.quantity || 1}</span>
+                              <span className="font-medium whitespace-nowrap ml-2">{item.price}</span>
+                            </div>
+                            {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
+                              <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                                {item.selectedLength && <div>+ {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
+                                {item.selectedDesign && <div>+ {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                                {item.selectedExtras?.map((ex: any, i: number) => (
+                                  <div key={i}>+ {ex.name} (+₦{ex.price.toLocaleString()})</div>
+                                ))}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     
                     {booking.notes && (
                       <>

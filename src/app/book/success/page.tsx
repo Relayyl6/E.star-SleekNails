@@ -116,15 +116,24 @@ export default function SuccessPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {snapshotItems.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="py-4">
-                    <p className="font-medium text-gray-800 text-sm">{item.name}</p>
-                    <p className="text-xs text-gray-400">{item.duration}</p>
-                  </td>
-                  <td className="py-4 text-right font-medium text-gray-800 text-sm">
-                    {item.price}
-                  </td>
-                </tr>
+                  <tr key={idx}>
+                    <td className="py-4">
+                      <p className="font-medium text-gray-800 text-sm">{item.name}</p>
+                      {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
+                        <div className="text-xs text-gray-500 my-1 space-y-0.5">
+                          {item.selectedLength && <div>+ {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
+                          {item.selectedDesign && <div>+ {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                          {item.selectedExtras?.map((ex: any, i: number) => (
+                            <div key={i}>+ {ex.name} (+₦{ex.price.toLocaleString()})</div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-400">{item.duration}</p>
+                    </td>
+                    <td className="py-4 text-right font-medium text-gray-800 text-sm align-top">
+                      {item.price}
+                    </td>
+                  </tr>
               ))}
             </tbody>
           </table>
