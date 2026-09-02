@@ -109,7 +109,7 @@ export default function SignatureGallery() {
   }, []);
 
   return (
-    <section className="relative min-h-[120vh] pt-12 pb-6 overflow-hidden flex flex-col justify-center">
+    <section className="relative pt-24 pb-16 overflow-hidden flex flex-col justify-center">
       
       {/* Animated Surreal Fog Transition from Blush Pink */}
       <div className="absolute top-0 left-0 right-0 h-48 md:h-80 z-10 pointer-events-none">

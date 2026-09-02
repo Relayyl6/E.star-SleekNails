@@ -170,7 +170,7 @@ export default function ServicesPageClient() {
     : servicesList.filter(s => s.category === activeCategory);
 
   return (
-    <div className="min-h-screen pt-32 pb-40 bg-[#FBF9F7]">
+    <div className="pt-32 pb-16 bg-[#FBF9F7] flex-1">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="text-left mb-10">
           <h1 className="text-4xl md:text-5xl font-serif text-[#1A1414] mb-3">Select Services</h1>
@@ -325,8 +325,8 @@ export default function ServicesPageClient() {
 
       {/* Customization Modal */}
       {customizingService && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-end md:items-center justify-center p-4" onClick={() => setCustomizingService(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in slide-in-from-bottom-8 md:zoom-in-95" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-end md:items-center justify-center p-4 pt-20 md:pt-4" onClick={() => setCustomizingService(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] md:max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in slide-in-from-bottom-8 md:zoom-in-95 mt-safe" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <div>
                 <h2 className="text-xl font-serif font-bold text-[#1A1414]">{customizingService.name}</h2>
