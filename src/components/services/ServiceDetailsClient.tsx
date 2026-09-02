@@ -3,6 +3,7 @@
 import { useCart } from '@/context/CartContext';
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function ServiceDetailsClient({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -11,6 +12,9 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
   const [service, setService] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string>('');
+  const [selectedLength, setSelectedLength] = useState<any | null>(null);
+  const [selectedDesign, setSelectedDesign] = useState<any | null>(null);
+  const [selectedExtras, setSelectedExtras] = useState<any[]>([]);
 
   useEffect(() => {
     fetch('/api/services')
@@ -23,6 +27,9 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
             ? found.images
             : found.image ? [found.image] : [];
           setActiveImage(imgs[0] || '');
+          setSelectedLength(found.hasLengths && found.lengths?.length > 0 ? found.lengths[0] : null);
+          setSelectedDesign(found.hasDesignTiers && found.designTiers?.length > 0 ? found.designTiers[0] : null);
+          setSelectedExtras([]);
         }
       })
       .catch(() => {})
@@ -37,9 +44,39 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
     if (!service) return;
     if (isSelected) {
       removeItem(service.id);
-    } else {
-      addItem({ ...service, quantity: 1 });
+      return;
     }
+
+    if (service.hasLengths && service.lengths?.length > 0 && !selectedLength) {
+      toast.error('Please select a length');
+      return;
+    }
+    
+    if (service.hasDesignTiers && service.designTiers?.length > 0 && !selectedDesign) {
+      toast.error('Please select a design tier');
+      return;
+    }
+
+    let total = service.basePrice || 0;
+    if (selectedLength) total += selectedLength.price;
+    if (selectedDesign) total += selectedDesign.price;
+    selectedExtras.forEach((e: any) => total += e.price);
+    
+    const formattedPrice = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total);
+
+    addItem({
+      id: service.id + '-' + Date.now(),
+      serviceId: service.id,
+      name: service.name,
+      price: formattedPrice,
+      basePrice: service.basePrice,
+      duration: service.duration,
+      image: service.image || service.images?.[0] || '',
+      quantity: 1,
+      selectedLength,
+      selectedDesign,
+      selectedExtras
+    }, true);
   };
 
   const allImages: string[] = service
@@ -115,8 +152,15 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
 
             <div className="flex items-center gap-6 mb-10 pb-10 border-b border-black/10 shrink-0">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-500 uppercase tracking-widest mb-1">Price</span>
-                <span className="text-2xl font-sans font-medium text-[#1A1414]">{service.price}</span>
+                <span className="text-sm text-gray-500 uppercase tracking-widest mb-1">Total Price</span>
+                <span className="text-2xl font-sans font-medium text-[#1A1414]">
+                  {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(
+                    (service.basePrice || 0) + 
+                    (selectedLength?.price || 0) + 
+                    (selectedDesign?.price || 0) + 
+                    selectedExtras.reduce((sum, e) => sum + e.price, 0)
+                  )}
+                </span>
               </div>
               <div className="w-px h-10 bg-black/10" />
               <div className="flex flex-col">
@@ -128,6 +172,79 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
             {service.description && (
               <div className="text-gray-600 mb-12 font-light leading-relaxed shrink-0 text-base">
                 <p>{service.description}</p>
+              </div>
+            )}
+
+            {service.hasLengths && service.lengths?.length > 0 && (
+              <div className="space-y-4 mb-8 shrink-0">
+                <h3 className="font-bold text-[#1A1414] flex items-center justify-between text-lg">
+                  Select Length <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Required</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {service.lengths.map((len: any) => (
+                    <label key={len.name} onClick={() => setSelectedLength(len)} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${selectedLength?.name === len.name ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center ${selectedLength?.name === len.name ? 'border-primary' : 'border-gray-300'}`}>
+                          {selectedLength?.name === len.name && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                        </div>
+                        <span className="font-medium text-gray-800">{len.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(len.price)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {service.hasDesignTiers && service.designTiers?.length > 0 && (
+              <div className="space-y-4 mb-8 shrink-0">
+                <h3 className="font-bold text-[#1A1414] flex items-center justify-between text-lg">
+                  Design Tier <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Required</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {service.designTiers.map((tier: any) => (
+                    <label key={tier.name} onClick={() => setSelectedDesign(tier)} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${selectedDesign?.name === tier.name ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center ${selectedDesign?.name === tier.name ? 'border-primary' : 'border-gray-300'}`}>
+                          {selectedDesign?.name === tier.name && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                        </div>
+                        <span className="font-medium text-gray-800">{tier.name}</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {service.hasExtras && service.extras?.length > 0 && (
+              <div className="space-y-4 mb-8 shrink-0">
+                <h3 className="font-bold text-[#1A1414] flex items-center justify-between text-lg">
+                  Extras & Add-ons <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Optional</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {service.extras.map((ex: any) => {
+                    const isChecked = selectedExtras.some(e => e.name === ex.name);
+                    return (
+                      <label key={ex.name} onClick={(e) => {
+                        e.preventDefault();
+                        if (isChecked) {
+                          setSelectedExtras(prev => prev.filter(p => p.name !== ex.name));
+                        } else {
+                          setSelectedExtras(prev => [...prev, ex]);
+                        }
+                      }} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${isChecked ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 shrink-0 rounded border flex items-center justify-center ${isChecked ? 'bg-primary border-primary' : 'border-gray-300'}`}>
+                            {isChecked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>}
+                          </div>
+                          <span className="font-medium text-gray-800">{ex.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
