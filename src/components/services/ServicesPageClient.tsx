@@ -278,7 +278,7 @@ export default function ServicesPageClient() {
                     )}
 
                     <div
-                      className="relative w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden shadow-sm cursor-pointer mt-auto"
+                      className="relative w-28 h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden shadow-sm cursor-pointer mt-auto shrink-0"
                       onPointerDown={handlePointerDown}
                       onPointerUp={handlePointerUp}
                       onPointerLeave={handlePointerUp}
@@ -352,7 +352,7 @@ export default function ServicesPageClient() {
                           </div>
                           <span className="font-medium text-gray-800">{len.name}</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(len.price)}</span>
+                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(len.price)}</span>
                       </label>
                     ))}
                   </div>
@@ -373,7 +373,7 @@ export default function ServicesPageClient() {
                           </div>
                           <span className="font-medium text-gray-800">{tier.name}</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}</span>
+                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}+</span>
                       </label>
                     ))}
                   </div>
@@ -403,7 +403,7 @@ export default function ServicesPageClient() {
                             </div>
                             <span className="font-medium text-gray-800">{ex.name}</span>
                           </div>
-                          <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}</span>
+                          <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}+</span>
                         </label>
                       );
                     })}

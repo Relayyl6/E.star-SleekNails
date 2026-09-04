@@ -189,7 +189,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
                         </div>
                         <span className="font-medium text-gray-800">{len.name}</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(len.price)}</span>
+                      <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(len.price)}</span>
                     </label>
                   ))}
                 </div>
@@ -210,7 +210,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
                         </div>
                         <span className="font-medium text-gray-800">{tier.name}</span>
                       </div>
-                      <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}</span>
+                      <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}+</span>
                     </label>
                   ))}
                 </div>
@@ -240,7 +240,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
                           </div>
                           <span className="font-medium text-gray-800">{ex.name}</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}</span>
+                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}+</span>
                       </label>
                     );
                   })}
