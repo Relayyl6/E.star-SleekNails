@@ -315,7 +315,7 @@ export default function ServicesPageClient() {
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative w-full max-w-2xl aspect-square rounded-3xl overflow-hidden shadow-2xl transform scale-100 animate-[pulse_0.2s_ease-out]">
-            <Image src={previewImage} alt="Preview" fill className="object-cover" />
+            <img src={previewImage} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
             <button className="absolute top-4 right-4 bg-black/50 text-white rounded-full p-2 hover:bg-black">
               <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>

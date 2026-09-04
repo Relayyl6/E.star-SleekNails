@@ -271,12 +271,10 @@ export default function HomePage() {
                         onPointerUp={handlePointerUp}
                         onPointerLeave={handlePointerUp}
                       >
-                        <Image 
-                          src={service.images?.[0] || service.image} 
+                        <img 
+                          src={service.images?.[0] || service.image || ''} 
                           alt={service.name} 
-                          fill 
-                          sizes="(max-width: 768px) 100px, 150px"
-                          className="object-cover transform group-hover:scale-105 transition-transform duration-500"
+                          className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                           draggable={false}
                         />
                         {isSelected && (
