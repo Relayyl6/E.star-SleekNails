@@ -110,9 +110,9 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
           Back to services
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 flex-1">
-          <div className="space-y-4 flex flex-col">
-            <div className="relative w-full flex-1 min-h-[360px] lg:min-h-[480px] rounded-2xl overflow-hidden shadow-xl bg-gray-100 border border-black/5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 flex-1 lg:h-[calc(100vh-240px)] lg:min-h-[600px] lg:max-h-[850px]">
+          <div className="space-y-4 flex flex-col lg:h-full">
+            <div className="relative w-full flex-1 min-h-[360px] lg:min-h-0 rounded-2xl overflow-hidden shadow-xl bg-gray-100 border border-black/5">
               {activeImage ? (
                 <img
                   src={activeImage}
@@ -127,7 +127,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
             </div>
 
             {allImages.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-1">
+              <div className="flex gap-3 overflow-x-auto pb-1 shrink-0">
                 {allImages.map((img, idx) => (
                   <button
                     key={idx}
@@ -141,8 +141,8 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
             )}
           </div>
 
-          <div className="flex flex-col">
-            <div className="inline-block px-4 py-1.5 bg-black/5 text-[#1A1414] rounded-full text-xs font-bold uppercase tracking-wider mb-6 w-fit">
+          <div className="flex flex-col lg:overflow-y-auto lg:h-full lg:pr-6 custom-scrollbar pb-6">
+            <div className="inline-block px-4 py-1.5 bg-black/5 text-[#1A1414] rounded-full text-xs font-bold uppercase tracking-wider mb-6 w-fit shrink-0">
               {service.category || 'Nails'}
             </div>
 
