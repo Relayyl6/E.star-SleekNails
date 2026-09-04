@@ -110,7 +110,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
           Back to services
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 flex-1 lg:h-[calc(100vh-240px)] lg:min-h-[600px] lg:max-h-[850px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 flex-1 lg:h-[calc(65vh)] lg:min-h-[450px] lg:max-h-[600px]">
           <div className="space-y-4 flex flex-col lg:h-full">
             <div className="relative w-full flex-1 min-h-[360px] lg:min-h-0 rounded-2xl overflow-hidden shadow-xl bg-gray-100 border border-black/5">
               {activeImage ? (
