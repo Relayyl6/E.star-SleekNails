@@ -223,7 +223,9 @@ export default function HomePage() {
                   >
                     <div className="flex-1 flex flex-col min-w-0">
                       <h3 className="font-serif text-xl md:text-2xl text-[#1A1414] mb-1">{service.name}</h3>
-                      <p className="text-sm font-medium text-gray-500 mb-2">{service.duration} · {service.price}</p>
+                      <p className="text-sm font-medium text-gray-500 mb-2">
+                        {service.duration} • {(service.hasLengths || service.hasDesignTiers) && !service.price.toLowerCase().includes('from') ? `From ${service.price}` : service.price}
+                      </p>
                       <p className="text-[13px] text-gray-700 leading-relaxed line-clamp-3 mb-2 flex-1">
                         {service.description || service.desc}
                       </p>

@@ -235,7 +235,9 @@ export default function ServicesPageClient() {
                 >
                   <div className="flex-1 flex flex-col min-w-0">
                     <h3 className="font-serif text-xl text-[#1A1414] mb-1">{service.name}</h3>
-                    <p className="text-sm font-medium text-gray-500 mb-2">{service.price} · {service.duration}</p>
+                    <p className="text-sm font-medium text-gray-500 mb-2">
+                      {(service.hasLengths || service.hasDesignTiers) && !service.price.toLowerCase().includes('from') ? `From ${service.price}` : service.price} · {service.duration}
+                    </p>
                     <p className="text-[13px] text-gray-600 leading-relaxed line-clamp-3 mb-2">
                       {service.description || service.desc}
                     </p>
