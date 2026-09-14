@@ -30,7 +30,8 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   const total = items.reduce((sum, item) => {
-    const priceNum = parseInt(item.price.replace(/[^\d]/g, ''));
+    const digits = item.price.replace(/[^\d]/g, '');
+    const priceNum = digits ? parseInt(digits, 10) : 0;
     return sum + (priceNum * item.quantity);
   }, 0);
 
