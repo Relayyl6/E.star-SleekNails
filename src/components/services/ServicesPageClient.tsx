@@ -45,6 +45,8 @@ export default function ServicesPageClient() {
             const rawData = JSON.parse(cached);
             const data = rawData.map((s: any) => ({ ...s, category: s.category || "Acrylic Nail Set — Plain" }));
             const sortedData = data.sort((a: any, b: any) => {
+              if (a.isFreestyle) return -1;
+              if (b.isFreestyle) return 1;
               const indexA = CATEGORIES.indexOf(a.category);
               const indexB = CATEGORIES.indexOf(b.category);
               return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
@@ -70,6 +72,8 @@ export default function ServicesPageClient() {
 
         // Sort services by CATEGORIES order
         const sortedData = data.sort((a: any, b: any) => {
+          if (a.isFreestyle) return -1;
+          if (b.isFreestyle) return 1;
           const indexA = CATEGORIES.indexOf(a.category);
           const indexB = CATEGORIES.indexOf(b.category);
           return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);

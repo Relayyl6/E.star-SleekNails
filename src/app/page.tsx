@@ -30,8 +30,12 @@ export default function HomePage() {
 
   const getFeaturedServices = (allServices: any[]) => {
     const featured = [];
+    
+    const freestyle = allServices.find(s => s.isFreestyle);
+    if (freestyle) featured.push(freestyle);
+
     for (const cat of CATEGORIES_TO_FEATURE) {
-      const match = allServices.find(s => (s.category || "Acrylic Nail Set — Plain") === cat);
+      const match = allServices.find(s => (s.category || "Acrylic Nail Set - Plain") === cat && !s.isFreestyle);
       if (match) featured.push(match);
     }
     return featured;
