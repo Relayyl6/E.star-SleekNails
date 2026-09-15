@@ -10,7 +10,7 @@ export default function SuccessPage() {
   const { items, bookingDetails, setIsOpen, clearCart } = useCart();
   const [mounted, setMounted] = useState(false);
   const [depositAmount, setDepositAmount] = useState(5000);
-  const [bankDetails, setBankDetails] = useState("Moniepoint, 7049022919, E.star SleekNails Luxury studio/ E.star SleekNails");
+  const [bankDetails, setBankDetails] = useState("E.star Sleeknails Luxury Studio - E_star Sleeknails, 7049022919, Moniepoint MFB");
   const [user, setUser] = useState<User | null>(null);
 
   // Take a snapshot so we can clear the cart but still show the invoice!

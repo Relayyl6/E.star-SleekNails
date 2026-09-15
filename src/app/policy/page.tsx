@@ -147,10 +147,11 @@ export default function PolicyPage() {
           <p className="text-sm text-gray-600 mb-3">Please make your deposit to:</p>
           
           <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-black/5 inline-block mx-auto w-full max-w-sm">
-            <p className="font-serif text-2xl mb-1 text-[#1A1414]">{settings.name}</p>
-            <p className="text-primary mb-4 text-sm font-medium">GTBank</p>
+            <p className="font-serif text-[22px] leading-tight mb-1 text-[#1A1414]">E.star Sleeknails Luxury Studio</p>
+            <p className="text-gray-500 mb-3 text-xs font-medium">E_star Sleeknails</p>
+            <p className="text-primary mb-4 text-sm font-medium">Moniepoint MFB</p>
             <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-100 group cursor-pointer hover:bg-gray-100 transition-colors">
-              <span className="font-mono text-2xl tracking-[0.2em] text-[#1A1414]">0123456789</span>
+              <span className="font-mono text-2xl tracking-[0.1em] text-[#1A1414]">7049022919</span>
               <svg className="w-5 h-5 text-gray-400 group-hover:text-[#1A1414]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
             </div>
           </div>

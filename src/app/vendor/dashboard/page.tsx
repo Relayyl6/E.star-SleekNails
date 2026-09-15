@@ -235,7 +235,7 @@ export default function VendorDashboardPage() {
           ${(booking.status?.toUpperCase() === 'PENDING') ? `
           <div style="margin-top: 40px; padding: 20px; background-color: #f9f9f9; border-left: 4px solid #1A1414;">
             <h3 style="margin-top: 0; color: #1A1414; font-size: 14px; text-transform: uppercase;">Payment Instructions</h3>
-            <p style="margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap;">Please transfer your payment to the following account to confirm your booking:<br/><br/><strong>${settings?.bankDetails?.trim() ? settings.bankDetails : 'GTBank\\n0123456789\\nE.star SleekNails'}</strong></p>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap;">Please transfer your payment to the following account to confirm your booking:<br/><br/><strong>${settings?.bankDetails?.trim() ? settings.bankDetails : 'Moniepoint MFB\\n7049022919\\nE.star Sleeknails Luxury Studio - E_star Sleeknails'}</strong></p>
           </div>
           ` : ''}
           

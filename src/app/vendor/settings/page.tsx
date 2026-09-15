@@ -230,7 +230,7 @@ export default function VendorSettingsPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-1">Bank Account Details</label>
               <textarea 
                 rows={3}
-                placeholder="e.g. GTBank - 0123456789 - E.star SleekNails"
+                placeholder="e.g. Moniepoint MFB - 7049022919 - E_star Sleeknails"
                 value={settings.bankDetails || ''}
                 onChange={e => setSettings({...settings, bankDetails: e.target.value})}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414]" 
