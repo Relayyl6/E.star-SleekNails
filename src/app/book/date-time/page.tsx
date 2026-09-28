@@ -9,7 +9,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 export default function DateTimeSelection() {
   const router = useRouter();
-  const { bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer } = useCart();
+  const { items, bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer } = useCart();
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     bookingDetails.date ? new Date(bookingDetails.date) : null
   );
@@ -63,6 +63,37 @@ export default function DateTimeSelection() {
     
     if (isToday) {
       validHours = validHours.filter(h => h > currentHour);
+    }
+    
+    // Custom logic to hide 3:00 PM slot (hour 15)
+    let hide3PM = false;
+    
+    // 1. Total extras > 2 hides 3 PM slot
+    const totalExtrasCount = items.reduce((total, item) => {
+      return total + (item.selectedExtras?.length || 0);
+    }, 0);
+    
+    if (totalExtrasCount > 2) {
+      hide3PM = true;
+    }
+    
+    // 2. Soak Off + Customised Set hides 3 PM slot
+    const hasSoakOff = items.some(item => 
+      item.name.toLowerCase().includes('soak off') || 
+      item.selectedExtras?.some(ex => ex.name.toLowerCase().includes('soak off'))
+    );
+    const hasCustomisedSet = items.some(item => 
+      item.name.toLowerCase().includes('custom') || 
+      item.name.toLowerCase().includes('freestyle') ||
+      !!item.selectedDesign
+    );
+    
+    if (hasSoakOff && hasCustomisedSet) {
+      hide3PM = true;
+    }
+    
+    if (hide3PM) {
+      validHours = validHours.filter(h => h !== 15);
     }
     
     return validHours.map(toSlot);
