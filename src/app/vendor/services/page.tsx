@@ -69,7 +69,7 @@ export default function VendorServicesPage() {
     if (service) {
       setEditingId(service.id);
       setName(service.name || '');
-      setCategory(service.category || 'Full Sets');
+      setCategory(service.category || 'Acrylic Nail Set - Plain');
       setPrice(service.price || '');
       setDuration(service.duration || '');
       setDesc(service.description || service.desc || '');
@@ -83,7 +83,7 @@ export default function VendorServicesPage() {
     } else {
       setEditingId(null);
       setName('');
-      setCategory('Full Sets');
+      setCategory('Acrylic Nail Set - Plain');
       setPrice('');
       setDuration('');
       setDesc('');
@@ -273,7 +273,7 @@ export default function VendorServicesPage() {
                     </div>
                   )}
                   <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-md text-[10px] font-bold text-[#1A1414] shadow-sm uppercase tracking-wider">
-                    {service.category || "Full Sets"}
+                    {service.category || "Acrylic Nail Set - Plain"}
                   </div>
                 </div>
                 
@@ -339,11 +339,12 @@ export default function VendorServicesPage() {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">Category</label>
                   <select required value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414] bg-white appearance-none">
-                    <option value="Full Sets">Full Sets</option>
-                    <option value="Infill & Overlays">Infill & Overlays</option>
-                    <option value="Pedicure">Pedicure</option>
-                    <option value="Nail Art & Add-ons">Nail Art & Add-ons</option>
-                    <option value="Take Off & Care">Take Off & Care</option>
+                    <option value="Acrylic Nail Set - Plain">Acrylic Nail Set - Plain</option>
+                    <option value="BIAB on Natural Nails">BIAB on Natural Nails</option>
+                    <option value="Plain Gel X Nail Set">Plain Gel X Nail Set</option>
+                    <option value="Gel Stick-On Set - Plain">Gel Stick-On Set - Plain</option>
+                    <option value="Toenails">Toenails</option>
+                    <option value="Others">Others</option>
                   </select>
                 </div>
               </div>
