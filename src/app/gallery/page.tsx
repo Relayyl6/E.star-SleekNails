@@ -19,6 +19,8 @@ export default function GalleryPage() {
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
+  const [tappedImageId, setTappedImageId] = useState<string | null>(null);
+
   useEffect(() => {
     fetch('/api/gallery')
       .then(res => res.json())
@@ -39,8 +41,22 @@ export default function GalleryPage() {
     });
   };
 
+  const handleImageClick = (image: GalleryImage) => {
+    // Check if device is likely mobile (touch screen)
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches) {
+      if (tappedImageId !== image.id) {
+        setTappedImageId(image.id);
+      } else {
+        setSelectedImage(image);
+      }
+    } else {
+      // Desktop - open lightbox immediately
+      setSelectedImage(image);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#1A1414] text-white pt-32 pb-20 px-4 md:px-8">
+    <div className="min-h-screen bg-[#1A1414] text-white pt-32 pb-20 px-4 md:px-8" onClick={() => setTappedImageId(null)}>
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
@@ -66,7 +82,10 @@ export default function GalleryPage() {
             {images.map(image => (
               <div 
                 key={image.id} 
-                onClick={() => setSelectedImage(image)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleImageClick(image);
+                }}
                 className="relative group rounded-xl overflow-hidden cursor-zoom-in break-inside-avoid shadow-lg"
               >
                 <img 
@@ -75,9 +94,9 @@ export default function GalleryPage() {
                   className="w-full object-cover group-hover:scale-105 transition-transform duration-700" 
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-300 flex flex-col justify-end p-4 ${tappedImageId === image.id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
                   {image.title && (
-                    <p className="font-serif font-bold text-white mb-2 translate-y-0 md:translate-y-2 md:group-hover:translate-y-0 transition-transform">{image.title}</p>
+                    <p className={`font-serif font-bold text-white mb-2 transition-transform ${tappedImageId === image.id ? 'translate-y-0' : 'translate-y-2 md:group-hover:translate-y-0'}`}>{image.title}</p>
                   )}
                   <div className="flex gap-2">
                     <button 
