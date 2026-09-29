@@ -6,7 +6,6 @@ import { useSettings } from "@/context/SettingsContext";
 
 export default function SignatureGallery() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [todayHours, setTodayHours] = useState<string>("9:00–5:00");
   const { settings } = useSettings();
@@ -85,7 +84,15 @@ export default function SignatureGallery() {
     return () => clearInterval(timer);
   }, [settings.hours]);
 
-  const images = [
+  const [fetchedImages, setFetchedImages] = useState<string[]>([]);
+  const [testimonials, setTestimonials] = useState<{ text: string, author: string, stars: number }[]>([
+    { text: "The cleanest cuticle work I've ever had. My BIAB set lasted 5 weeks with zero lifting. Absolutely obsessed.", author: "Sarah M.", stars: 5 },
+    { text: "She is a true artist! I showed her an inspiration picture and she executed it perfectly. I'm in love.", author: "Jessica T.", stars: 5 },
+    { text: "Such a relaxing studio environment. I felt so pampered, and my natural nails have never been stronger.", author: "Elena R.", stars: 5 }
+  ]);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  const defaultImages = [
     "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=800&q=80",
@@ -95,18 +102,32 @@ export default function SignatureGallery() {
     "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?auto=format&fit=crop&w=800&q=80",
   ];
 
-  const testimonials = [
-    { text: "The cleanest cuticle work I've ever had. My BIAB set lasted 5 weeks with zero lifting. Absolutely obsessed.", author: "Sarah M." },
-    { text: "She is a true artist! I showed her an inspiration picture and she executed it perfectly. I'm in love.", author: "Jessica T." },
-    { text: "Such a relaxing studio environment. I felt so pampered, and my natural nails have never been stronger.", author: "Elena R." }
-  ];
+  useEffect(() => {
+    fetch('/api/gallery')
+      .then(res => res.json())
+      .then(data => {
+        if (data.images) {
+          const favs = data.images.filter((img: any) => img.isFavorite).map((img: any) => img.url);
+          setFetchedImages(favs);
+        }
+        if (data.testimonials && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
+          setTestimonials(data.testimonials);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [testimonials.length]);
+
+  // Merge fetched images with defaults to ensure we always have 7 images
+  const images = [...fetchedImages, ...defaultImages].slice(0, 7);
+
+  const activeTestimonial = testimonials[currentTestimonial] || testimonials[0];
 
   return (
     <section className="relative pt-24 pb-16 overflow-hidden flex flex-col justify-center">
@@ -194,7 +215,7 @@ export default function SignatureGallery() {
           <div className="col-span-2 row-span-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col justify-center shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/80"></div>
             <div className="flex gap-1 mb-3">
-              {[...Array(5)].map((_, i) => (
+              {[...Array(activeTestimonial.stars || 5)].map((_, i) => (
                 <svg key={i} className="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
               ))}
             </div>
