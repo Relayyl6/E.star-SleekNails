@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 import { getAdminAuth } from '@/lib/firebase/admin';
 
 // The emails that are granted ADMIN access
@@ -27,7 +29,6 @@ export async function POST(request: Request) {
       authInstance = getAdminAuth();
       decodedToken = await authInstance.verifyIdToken(token);
     } catch (adminError: any) {
-      console.error('Admin SDK Error:', adminError);
       return NextResponse.json(
         { error: 'Server configuration error: Missing Firebase Admin Service Account Key in .env.local.' },
         { status: 500 }
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     response.cookies.set({
       name: 'session',
       value: sessionCookie,
-      maxAge: expiresIn,
+      maxAge: expiresIn / 1000,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
