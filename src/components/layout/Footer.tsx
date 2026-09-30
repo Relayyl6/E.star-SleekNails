@@ -56,7 +56,11 @@ export default function Footer() {
       </div>
       
       <div className="max-w-7xl mx-auto w-full mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/50 mb-8 px-6 md:px-12">
-        <p>© {new Date().getFullYear()} {settings.name}. All rights reserved.</p>
+        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center md:text-left">
+          <p>© {new Date().getFullYear()} {settings.name}. All rights reserved.</p>
+          <span className="hidden md:inline text-white/20">|</span>
+          <p>Made by Yemuel — 09064982841</p>
+        </div>
         <div className="flex items-center gap-4">
           <a href={`https://instagram.com/${settings.instagram?.replace('@', '')}`} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Instagram</a>
         </div>
