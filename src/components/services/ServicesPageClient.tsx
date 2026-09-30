@@ -379,7 +379,7 @@ export default function ServicesPageClient() {
                           </div>
                           <span className="font-medium text-gray-800">{tier.name}</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}+</span>
+                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}</span>
                       </label>
                     ))}
                   </div>
@@ -409,7 +409,7 @@ export default function ServicesPageClient() {
                             </div>
                             <span className="font-medium text-gray-800">{ex.name}</span>
                           </div>
-                          <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}+</span>
+                          <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}{ex.hasPlus ? '+' : ''}</span>
                         </label>
                       );
                     })}

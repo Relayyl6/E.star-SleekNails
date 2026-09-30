@@ -26,6 +26,7 @@ export default function VendorGalleryPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [tappedImageId, setTappedImageId] = useState<string | null>(null);
   
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
 
@@ -40,6 +41,23 @@ export default function VendorGalleryPage() {
     fetchGallery();
     fetchServices();
   }, []);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.group')) {
+        setTappedImageId(null);
+      }
+    };
+    if (tappedImageId) {
+      document.addEventListener('touchstart', handleGlobalClick);
+      document.addEventListener('click', handleGlobalClick);
+    }
+    return () => {
+      document.removeEventListener('touchstart', handleGlobalClick);
+      document.removeEventListener('click', handleGlobalClick);
+    };
+  }, [tappedImageId]);
 
   const fetchServices = async () => {
     try {
@@ -272,11 +290,22 @@ export default function VendorGalleryPage() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {images.map(image => (
-                  <div key={image.id} className={`relative group aspect-square rounded-xl overflow-hidden border-2 ${image.isFavorite ? 'border-primary shadow-md' : 'border-transparent shadow-sm'}`}>
+                  <div 
+                    key={image.id} 
+                    className={`relative group aspect-square rounded-xl overflow-hidden border-2 ${image.isFavorite ? 'border-primary shadow-md' : 'border-transparent shadow-sm'}`}
+                    onClick={(e) => {
+                      if (window.matchMedia('(hover: none)').matches) {
+                        if (tappedImageId !== image.id) {
+                          e.preventDefault();
+                          setTappedImageId(image.id);
+                        }
+                      }
+                    }}
+                  >
                     <Image src={image.url} alt="Gallery" fill className="object-cover" />
                     
                     {/* Overlay */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2 z-10">
+                    <div className={`absolute inset-0 bg-black/40 flex flex-col justify-between p-2 z-10 transition-opacity duration-300 ${tappedImageId === image.id ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
                       <div className="flex justify-end gap-2">
                         <button 
                           onClick={() => setEditingImage(image)}

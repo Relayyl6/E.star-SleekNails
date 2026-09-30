@@ -400,10 +400,14 @@ export default function VendorServicesPage() {
                         <div key={i} className="flex gap-2 items-center">
                           <input type="text" placeholder="e.g. Basic Design" value={opt.name} onChange={e => { const newOpts = [...designTiers]; newOpts[i].name = e.target.value; setDesignTiers(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
                           <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...designTiers]; newOpts[i].price = Number(e.target.value); setDesignTiers(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
+                            <input type="checkbox" checked={opt.hasPlus || false} onChange={e => { const newOpts = [...designTiers]; newOpts[i].hasPlus = e.target.checked; setDesignTiers(newOpts); }} className="rounded border-gray-300 text-primary focus:ring-primary" />
+                            Add "+"
+                          </label>
                           <button type="button" onClick={() => setDesignTiers(designTiers.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><FiX /></button>
                         </div>
                       ))}
-                      <button type="button" onClick={() => setDesignTiers([...designTiers, { name: '', price: 0 }])} className="text-xs font-bold text-primary hover:underline">+ Add Design Tier</button>
+                      <button type="button" onClick={() => setDesignTiers([...designTiers, { name: '', price: 0, hasPlus: false }])} className="text-xs font-bold text-primary hover:underline">+ Add Design Tier</button>
                     </div>
                   )}
                 </div>
@@ -420,10 +424,14 @@ export default function VendorServicesPage() {
                         <div key={i} className="flex gap-2 items-center">
                           <input type="text" placeholder="e.g. Gel Polish" value={opt.name} onChange={e => { const newOpts = [...extras]; newOpts[i].name = e.target.value; setExtras(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
                           <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...extras]; newOpts[i].price = Number(e.target.value); setExtras(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
+                            <input type="checkbox" checked={opt.hasPlus || false} onChange={e => { const newOpts = [...extras]; newOpts[i].hasPlus = e.target.checked; setExtras(newOpts); }} className="rounded border-gray-300 text-primary focus:ring-primary" />
+                            Add "+"
+                          </label>
                           <button type="button" onClick={() => setExtras(extras.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><FiX /></button>
                         </div>
                       ))}
-                      <button type="button" onClick={() => setExtras([...extras, { name: '', price: 0 }])} className="text-xs font-bold text-primary hover:underline">+ Add Extra Item</button>
+                      <button type="button" onClick={() => setExtras([...extras, { name: '', price: 0, hasPlus: false }])} className="text-xs font-bold text-primary hover:underline">+ Add Extra Item</button>
                     </div>
                   )}
                 </div>
