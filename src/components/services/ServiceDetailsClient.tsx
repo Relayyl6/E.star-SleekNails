@@ -154,12 +154,14 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500 uppercase tracking-widest mb-1">Total Price</span>
                 <span className="text-2xl font-sans font-medium text-[#1A1414]">
-                  {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(
-                    (service.basePrice || 0) + 
-                    (selectedLength?.price || 0) + 
-                    (selectedDesign?.price || 0) + 
-                    selectedExtras.reduce((sum, e) => sum + e.price, 0)
-                  )}
+                  {(() => {
+                    const hasSelections = selectedLength || selectedDesign || selectedExtras.length > 0;
+                    const total = (service.basePrice || 0) + (selectedLength?.price || 0) + (selectedDesign?.price || 0) + selectedExtras.reduce((sum, e: any) => sum + e.price, 0);
+                    if (!hasSelections && service.price) {
+                      return service.price.startsWith('₦') ? service.price : (service.price.match(/^[0-9,.]+$/) ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total) : service.price);
+                    }
+                    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total);
+                  })()}
                 </span>
               </div>
               <div className="w-px h-10 bg-black/10" />
