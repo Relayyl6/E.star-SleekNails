@@ -5,7 +5,6 @@ import VendorSidebar from './VendorSidebar';
 
 const ADMIN_EMAILS = [
   'oseghaleleonard39@gmail.com', // Dev email
-  'relayamin12@gmail.com',       // Admin email
   'peteratambaesther@gmail.com'  // Brand owner's email
 ];
 
@@ -39,3 +38,4 @@ export default async function VendorLayout({ children }: { children: React.React
     </div>
   );
 }
+

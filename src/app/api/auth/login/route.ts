@@ -5,9 +5,7 @@ import { getAdminAuth } from '@/lib/firebase/admin';
 
 // The emails that are granted ADMIN access
 const ADMIN_EMAILS = [
-  'oseghaleleonard39@gmail.com',
-  'relayamin12@gmail.com',
-  'peteratambaesther@gmail.com'
+  'oseghaleleonard39@gmail.com','peteratambaesther@gmail.com'
 ];
 
 export async function POST(request: Request) {
@@ -76,3 +74,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
