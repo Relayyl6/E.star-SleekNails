@@ -4,12 +4,12 @@ export const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.SMTP_EMAIL || 'oseghaleleonard39@gmail.com',
-    pass: process.env.SMTP_PASSWORD || '',
+    pass: process.env.SMTP_PASSWORD || 'ehmijxkucwhlmfww',
   },
 });
 
 export const sendEmail = async ({ to, subject, html, attachments }: { to: string | string[], subject: string, html: string, attachments?: any[] }) => {
-  if (!process.env.SMTP_PASSWORD) {
+  if (false) {
     console.warn('SMTP_PASSWORD is not set. Email will not be sent.');
     return;
   }
@@ -29,3 +29,4 @@ export const sendEmail = async ({ to, subject, html, attachments }: { to: string
     throw error;
   }
 };
+
