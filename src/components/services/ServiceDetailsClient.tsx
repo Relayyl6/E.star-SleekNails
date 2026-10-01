@@ -57,8 +57,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
       return;
     }
 
-    let total = service.basePrice || 0;
-    if (selectedLength) total += selectedLength.price;
+    let total = selectedLength ? selectedLength.price : (service.basePrice || 0);
     if (selectedDesign) total += selectedDesign.price;
     selectedExtras.forEach((e: any) => total += e.price);
     
@@ -156,7 +155,7 @@ export default function ServiceDetailsClient({ params }: { params: Promise<{ id:
                 <span className="text-2xl font-sans font-medium text-[#1A1414]">
                   {(() => {
                     const hasSelections = selectedLength || selectedDesign || selectedExtras.length > 0;
-                    const total = (service.basePrice || 0) + (selectedLength?.price || 0) + (selectedDesign?.price || 0) + selectedExtras.reduce((sum, e: any) => sum + e.price, 0);
+                    const total = (selectedLength ? selectedLength.price : (service.basePrice || 0)) + (selectedDesign?.price || 0) + selectedExtras.reduce((sum, e: any) => sum + e.price, 0);
                     if (!hasSelections && service.price) {
                       return service.price.startsWith('₦') ? service.price : (service.price.match(/^[0-9,.]+$/) ? new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total) : service.price);
                     }

@@ -145,8 +145,7 @@ export default function ServicesPageClient() {
     }
 
     // Calculate total
-    let total = customizingService.basePrice || 0;
-    if (selectedLength) total += selectedLength.price;
+    let total = selectedLength ? selectedLength.price : (customizingService.basePrice || 0);
     if (selectedDesign) total += selectedDesign.price;
     selectedExtras.forEach(e => total += e.price);
     

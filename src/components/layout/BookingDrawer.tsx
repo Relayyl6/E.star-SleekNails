@@ -59,7 +59,7 @@ export default function BookingDrawer() {
                     {/* Render Add-ons */}
                     {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
                       <div className="text-xs text-white/60 mb-2 space-y-0.5">
-                        {item.selectedLength && <div>• {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
+                        {item.selectedLength && <div>• {item.selectedLength.name} ({item.selectedLength.price.toLocaleString()})</div>}
                         {item.selectedDesign && <div>• {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
                         {item.selectedExtras?.map((ex, i) => (
                           <div key={i}>• {ex.name} (+₦{ex.price.toLocaleString()})</div>
