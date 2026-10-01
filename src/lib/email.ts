@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 export const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.SMTP_EMAIL || 'peteratambaesther@gmail.com',
+    user: process.env.SMTP_EMAIL || 'oseghaleleonard39@gmail.com',
     pass: process.env.SMTP_PASSWORD || '',
   },
 });
@@ -16,7 +16,7 @@ export const sendEmail = async ({ to, subject, html, attachments }: { to: string
   
   try {
     const info = await transporter.sendMail({
-      from: `"E.star SleekNails" <${process.env.SMTP_EMAIL || 'peteratambaesther@gmail.com'}>`,
+      from: `"E.star SleekNails" <${process.env.SMTP_EMAIL || 'oseghaleleonard39@gmail.com'}>`,
       to,
       subject,
       html,
