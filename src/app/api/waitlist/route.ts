@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         
         await sendEmail({
           
-          to: ['oseghaleleonard39@gmail.com'],
+          to: ['peteratambaesther@gmail.com'],
           subject: `New Waitlist Entry for ${date}`,
           html: `
             <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
@@ -181,4 +181,5 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 

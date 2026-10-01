@@ -112,9 +112,20 @@ export async function POST(request: Request) {
               Thank you for choosing E.star SleekNails! We look forward to seeing you.
             </p>
           </div>
-        `
-      });
-    } catch (emailError) {
+        `        });
+        
+        let adminEmail = 'peteratambaesther@gmail.com';
+        try {
+          const settingsDoc = await db.collection('storefront_config').doc('main').get();
+          if (settingsDoc.exists) adminEmail = (settingsDoc.data()?.adminEmail && settingsDoc.data()?.adminEmail !== 'oseghaleleonard39@gmail.com') ? settingsDoc.data().adminEmail : adminEmail;
+        } catch(e) {}
+        
+        await sendEmail({
+          to: [adminEmail],
+          subject: 'Booking Confirmed Alert: ' + (data.ref || data.id),
+          html: '<div><h2>Booking Confirmed</h2><p>You have just confirmed the booking and sent the receipt for <strong>' + (data.ref || data.id) + '</strong>.</p><p><strong>Customer:</strong> ' + data.firstName + ' ' + data.lastName + ' (' + data.email + ')</p><p><strong>Date & Time:</strong> ' + data.date + ' at ' + data.time + '</p></div>'
+        });
+      } catch (emailError) {
       console.error("Failed to send receipt email:", emailError);
     }
 
@@ -124,4 +135,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+
 

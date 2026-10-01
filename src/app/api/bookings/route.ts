@@ -336,7 +336,7 @@ export async function POST(request: Request) {
         try {
           const settingsDoc = await db.collection('storefront_config').doc('main').get();
           if (settingsDoc.exists) {
-            adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
+            adminEmail = (settingsDoc.data()?.adminEmail && settingsDoc.data()?.adminEmail !== 'oseghaleleonard39@gmail.com') ? settingsDoc.data().adminEmail : adminEmail;
           }
         } catch (e) {
           console.error("Error fetching admin email for booking alert", e);
@@ -444,7 +444,7 @@ export async function PATCH(request: Request) {
         let adminEmail = 'peteratambaesther@gmail.com';
         try {
           const settingsDoc = await db.collection('storefront_config').doc('main').get();
-          if (settingsDoc.exists) adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
+          if (settingsDoc.exists) adminEmail = (settingsDoc.data()?.adminEmail && settingsDoc.data()?.adminEmail !== 'oseghaleleonard39@gmail.com') ? settingsDoc.data().adminEmail : adminEmail;
         } catch(e) {}
         
         await sendEmail({
@@ -511,6 +511,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 
 
 
