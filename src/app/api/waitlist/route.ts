@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase/admin';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
   try {
@@ -27,11 +27,11 @@ export async function POST(request: Request) {
     console.log(`[Waitlist DB Insert]: Added ${email} to waitlist for ${date}`);
 
     // Send email to vendor
-    if (process.env.RESEND_API_KEY) {
+    if (true) {
       try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: 'onboarding@resend.dev',
+        
+        await sendEmail({
+          
           to: ['oseghaleleonard39@gmail.com'],
           subject: `New Waitlist Entry for ${date}`,
           html: `
@@ -48,8 +48,8 @@ export async function POST(request: Request) {
         });
         
         // Send email to client
-        await resend.emails.send({
-          from: 'onboarding@resend.dev',
+        await sendEmail({
+          
           to: [lowerEmail],
           subject: `Waitlist Request Received - E.star SleekNails`,
           html: `
@@ -181,3 +181,4 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

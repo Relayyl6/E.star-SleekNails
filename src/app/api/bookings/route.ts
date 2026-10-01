@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb, getAdminAuth } from '@/lib/firebase/admin';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email';
 import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
@@ -295,13 +295,13 @@ export async function POST(request: Request) {
       'END:VCALENDAR'
     ].join('\r\n');
 
-    // Send emails via Resend
-    if (process.env.RESEND_API_KEY) {
+    // Send emails via Nodemailer
+    if (true) {
       try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
         
-        await resend.emails.send({
-          from: 'onboarding@resend.dev',
+        
+        await sendEmail({
+          
           to: [email],
           subject: `Booking Request Received: ${ref} (Action Required)`,
           html: `
@@ -343,7 +343,7 @@ export async function POST(request: Request) {
         }
 
         const adminEmailPayload: any = {
-          from: 'onboarding@resend.dev',
+          
           to: [adminEmail],
           subject: `New Booking Alert: ${ref}`,
           html: `
@@ -363,7 +363,7 @@ export async function POST(request: Request) {
           `
         };
 
-        await resend.emails.send(adminEmailPayload);
+        await sendEmail(adminEmailPayload);
       } catch (emailError) {
         console.error("Failed to send booking emails:", emailError);
       }
@@ -421,13 +421,13 @@ export async function PATCH(request: Request) {
     await docRef.update({ status });
     
     // Send email notification on cancellation
-    if (status === 'CANCELLED' && data.email && process.env.RESEND_API_KEY) {
+    if (status === 'CANCELLED' && data.email && true) {
       try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
+        
         
         // Email to customer
-        await resend.emails.send({
-          from: 'onboarding@resend.dev',
+        await sendEmail({
+          
           to: [data.email],
           subject: `Booking Cancelled: ${data.ref || id}`,
           html: `
@@ -447,8 +447,8 @@ export async function PATCH(request: Request) {
           if (settingsDoc.exists) adminEmail = settingsDoc.data()?.adminEmail || adminEmail;
         } catch(e) {}
         
-        await resend.emails.send({
-          from: 'onboarding@resend.dev',
+        await sendEmail({
+          
           to: [adminEmail],
           subject: `Booking Cancelled Alert: ${data.ref || id}`,
           html: `
@@ -511,5 +511,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+
 
 

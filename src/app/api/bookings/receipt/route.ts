@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase/admin';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email';
 
 import { cookies } from 'next/headers';
 import { getAdminAuth } from '@/lib/firebase/admin';
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing booking ID' }, { status: 400 });
     }
     
-    if (!process.env.RESEND_API_KEY) {
+    if (!true) {
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
     }
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No email found for this booking' }, { status: 400 });
     }
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    
     
     // Create the receipt HTML
     const itemsHtml = data.items?.map((item: any) => `
@@ -60,8 +60,8 @@ export async function POST(request: Request) {
     `).join('') || `<tr><td colspan="3" style="padding: 10px;">Custom Service</td></tr>`;
 
     try {
-      await resend.emails.send({
-        from: 'onboarding@resend.dev',
+      await sendEmail({
+        
         to: [data.email],
         subject: `Official Receipt - E.star SleekNails Booking (${data.ref || data.id})`,
         html: `
@@ -124,3 +124,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
