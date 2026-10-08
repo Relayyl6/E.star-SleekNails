@@ -3,10 +3,13 @@ import { redirect } from 'next/navigation';
 import { getAdminAuth } from '@/lib/firebase/admin';
 import VendorSidebar from './VendorSidebar';
 
-const ADMIN_EMAILS = [
-  'oseghaleleonard39@gmail.com', // Dev email
-  'peteratambaesther@gmail.com'  // Brand owner's email
-];
+const DEFAULT_ADMINS = ['oseghaleleonard39@gmail.com', 'peteratambaesther@gmail.com'];
+const getAdminEmails = () => {
+  if (process.env.ADMIN_EMAILS) {
+    return process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase());
+  }
+  return DEFAULT_ADMINS;
+};
 
 export default async function VendorLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
@@ -16,26 +19,29 @@ export default async function VendorLayout({ children }: { children: React.React
     redirect('/login');
   }
 
+  let isAuthorized = false;
   try {
     const auth = getAdminAuth();
     const decodedToken = await auth.verifySessionCookie(sessionCookie, true);
     
-    // Security check: must be in the approved admin emails list
-    if (!decodedToken.email || !ADMIN_EMAILS.includes(decodedToken.email.toLowerCase())) {
-      redirect('/dashboard'); // Kick out normal users
+    if (decodedToken.email && getAdminEmails().includes(decodedToken.email.toLowerCase())) {
+      isAuthorized = true;
     }
   } catch (error) {
+    // Invalid cookie
     redirect('/login');
+  }
+
+  if (!isAuthorized) {
+    redirect('/dashboard');
   }
 
   return (
     <div className="flex h-screen bg-gray-50 text-black flex-col md:flex-row">
       <VendorSidebar />
-      {/* Main Content */}
       <main className="flex-1 min-h-0 overflow-y-auto bg-gray-50 w-full">
         {children}
       </main>
     </div>
   );
 }
-
