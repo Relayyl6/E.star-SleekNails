@@ -162,10 +162,47 @@ export async function GET(request: Request) {
   }
 }
 
+
+async function verifyReceiptWithAI(receiptUrl: string, expectedAmount: number) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return false;
+
+  try {
+    const imageRes = await fetch(receiptUrl);
+    const arrayBuffer = await imageRes.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    const mimeType = imageRes.headers.get('content-type') || 'image/jpeg';
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: `You are a strict payment receipt verifier. Check if this receipt image contains:\n1. The word "Successful" or "Success" or similar indicating a completed transfer.\n2. An amount of exactly ₦${expectedAmount.toLocaleString()} or ${expectedAmount}.\n\nRespond with ONLY a raw JSON object: {"verified": true} or {"verified": false, "reason": "..."}. Do not use markdown.` },
+            { inline_data: { mime_type: mimeType, data: base64Image } }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return false;
+
+    const cleaned = text.replace(/\x60\x60\x60json/g, '').replace(/\x60\x60\x60/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    return parsed.verified === true;
+  } catch (e) {
+    console.error("AI Verification Error", e);
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, phone, instagram, notes, ref, date, time, items, total, photoUrl, userId } = body;
+    const { email, firstName, lastName, phone, instagram, notes, ref, date, time, items, total, photoUrl, receiptUrl, userId } = body;
 
     if (!email || !date || !time || !ref) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -180,10 +217,32 @@ export async function POST(request: Request) {
       .where('time', '==', time)
       .get();
 
-    const isActuallyBooked = existing.docs.some(doc => doc.data().status !== 'CANCELLED');
+    const isActuallyBooked = existing.docs.some(doc => {
+       const status = doc.data().status;
+       return status === 'CONFIRMED' || status === 'COMPLETED';
+    });
 
     if (isActuallyBooked) {
       return NextResponse.json({ success: false, error: 'Slot already booked' }, { status: 409 });
+    }
+
+    // Determine Expected Deposit
+    let depositAmount = 5000;
+    try {
+      const settingsDoc = await db.collection('storefront_config').doc('main').get();
+      if (settingsDoc.exists && settingsDoc.data()?.depositAmount !== undefined) {
+        depositAmount = settingsDoc.data().depositAmount;
+      }
+    } catch(e) {}
+    const expectedDeposit = Math.min(total, depositAmount);
+
+    // AI Verification
+    let finalStatus = 'PENDING_VERIFICATION';
+    if (receiptUrl) {
+      const isVerified = await verifyReceiptWithAI(receiptUrl, expectedDeposit);
+      if (isVerified) {
+        finalStatus = 'CONFIRMED';
+      }
     }
 
     // Save to Firestore
@@ -200,8 +259,9 @@ export async function POST(request: Request) {
       items,
       total,
       photoUrl: photoUrl || null,
+      receiptUrl: receiptUrl || null,
       userId: userId || null,
-      status: 'PENDING',
+      status: finalStatus,
       createdAt: new Date().toISOString()
     });
 
@@ -239,9 +299,7 @@ export async function POST(request: Request) {
         items.forEach((item: any) => {
            let mins = 0;
            const dStr = item.duration || '';
-           if (dStr.includes('h')) {
-             mins += parseInt(dStr.split('h')[0]) * 60;
-           }
+           if (dStr.includes('h')) mins += parseInt(dStr.split('h')[0]) * 60;
            if (dStr.includes('m')) {
              const mMatch = dStr.match(/(\d+)m/);
              if (mMatch) mins += parseInt(mMatch[1]);
@@ -254,12 +312,7 @@ export async function POST(request: Request) {
     } catch(e) {}
 
     const [hours, minutesStr] = time.split(':');
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Missing services items' }, { status: 400 });
-    }
-
     const startDate = new Date(date);
-    // Parse time in WAT (UTC+1)
     startDate.setUTCHours(parseInt(hours, 10) - 1); 
     startDate.setUTCMinutes(parseInt(minutesStr, 10));
     
@@ -295,21 +348,57 @@ export async function POST(request: Request) {
       'END:VCALENDAR'
     ].join('\r\n');
 
+    // Admin Email
+    let adminEmail = 'peteratambaesther@gmail.com';
+    try {
+      const settingsDoc = await db.collection('storefront_config').doc('main').get();
+      if (settingsDoc.exists) {
+        adminEmail = (settingsDoc.data()?.adminEmail && settingsDoc.data()?.adminEmail !== 'oseghaleleonard39@gmail.com') ? settingsDoc.data().adminEmail : adminEmail;
+      }
+    } catch (e) {}
+
     // Send emails via Nodemailer
-    if (true) {
-      try {
-        
-        
+    try {
+      if (finalStatus === 'CONFIRMED') {
+        // AI Verified successfully, send official receipt
         await sendEmail({
-          
           to: [email],
-          subject: `Booking Request Received: ${ref} (Action Required)`,
+          replyTo: adminEmail,
+          subject: `Official Receipt - E.star SleekNails Booking (${ref})`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; border: 1px solid #ddd; padding: 20px;">
+              <div style="text-align: center; border-bottom: 2px solid #1A1414; padding-bottom: 20px; margin-bottom: 20px;">
+                <h1 style="color: #1A1414; margin: 0;">E.star SleekNails</h1>
+                <p style="color: #666; margin: 5px 0 0 0;">Official Payment Receipt</p>
+              </div>
+              <p>Hi ${firstName || 'Valued Client'},</p>
+              <p>Your payment has been successfully confirmed. Your appointment is now <strong>fully secured</strong>.</p>
+              <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="padding: 5px 0;"><strong>Receipt No:</strong></td><td style="padding: 5px 0; text-align: right;">${ref}</td></tr>
+                  <tr><td style="padding: 5px 0;"><strong>Appointment Date:</strong></td><td style="padding: 5px 0; text-align: right;">${new Date(date + "T12:00:00").toLocaleDateString()} at ${time}</td></tr>
+                  <tr><td style="padding: 5px 0;"><strong>Status:</strong></td><td style="padding: 5px 0; text-align: right; color: green; font-weight: bold;">CONFIRMED / PAID</td></tr>
+                </table>
+              </div>
+              <h3 style="margin-top: 20px;">Services Booked</h3>
+              ${itemsHtml}
+              <p style="margin-top: 20px; font-size: 0.9em; color: #666;">We have attached a calendar invite to this email. See you soon!</p>
+            </div>
+          `,
+          attachments: [{ filename: 'invite.ics', content: Buffer.from(icsString).toString('base64'), contentType: 'text/calendar' }]
+        });
+      } else {
+        // Manual Verification Needed
+        await sendEmail({
+          to: [email],
+          replyTo: adminEmail,
+          subject: `Booking Request Received: ${ref} (Verification Pending)`,
           html: `
             <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
               <h1 style="color: #1A1414;">Hi ${firstName},</h1>
               <p>We have successfully received your appointment request!</p>
-              <div style="background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffeeba;">
-                <strong>Action Required:</strong> Your booking is currently <strong>PENDING</strong>. Please log into your dashboard, download your invoice, and complete the payment instructions to secure your slot.
+              <div style="background-color: #e2f3f5; color: #0c5460; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #bee5eb;">
+                <strong>Status Update:</strong> Your booking is currently <strong>PENDING VERIFICATION</strong>. We have received your payment receipt and our team is reviewing it.
               </div>
               <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin:0 0 10px 0;"><strong>Reference:</strong> ${ref}</p>
@@ -318,55 +407,54 @@ export async function POST(request: Request) {
                 <h3 style="margin: 20px 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Services Booked</h3>
                 ${itemsHtml}
               </div>
-              <p>Once your payment is confirmed by our team, your status will update to CONFIRMED and you will receive an Official Receipt.</p>
-              <p>We've attached a tentative calendar invite to this email so you can block off the time!</p>
+              <p>Once your payment is manually confirmed by our team, your status will update to CONFIRMED and you will receive an Official Receipt.</p>
               <p>Best regards,<br>E.star SleekNails Team</p>
             </div>
-          `,
-          attachments: [
-            {
-              filename: 'invite.ics',
-              content: Buffer.from(icsString).toString('base64'),
-              contentType: 'text/calendar'
-            }
-          ]
-        });
-
-        let adminEmail = 'peteratambaesther@gmail.com';
-        try {
-          const settingsDoc = await db.collection('storefront_config').doc('main').get();
-          if (settingsDoc.exists) {
-            adminEmail = (settingsDoc.data()?.adminEmail && settingsDoc.data()?.adminEmail !== 'oseghaleleonard39@gmail.com') ? settingsDoc.data().adminEmail : adminEmail;
-          }
-        } catch (e) {
-          console.error("Error fetching admin email for booking alert", e);
-        }
-
-        const adminEmailPayload: any = {
-          
-          to: [adminEmail],
-          subject: `New Booking Alert: ${ref}`,
-          html: `
-            <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-              <h2 style="color: #1A1414;">New Appointment Booked</h2>
-              <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Phone:</strong> ${phone}</p>
-                ${instagram ? `<p><strong>Instagram:</strong> @${instagram}</p>` : ''}
-                <p><strong>Date/Time:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()} @ ${time}</p>
-                ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-                ${photoUrl ? `<p><strong>Inspiration Photo:</strong></p><img src="${photoUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" />` : ''}
-                ${itemsHtml}
-              </div>
-            </div>
           `
-        };
-
-        await sendEmail(adminEmailPayload);
-      } catch (emailError) {
-        console.error("Failed to send booking emails:", emailError);
+        });
       }
+
+      
+
+      const adminEmailPayload: any = {
+        to: [adminEmail],
+        subject: `${finalStatus === 'CONFIRMED' ? 'Confirmed Booking' : 'New Booking Alert'}: ${ref}`,
+        html: `
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+            <h2 style="color: #1A1414;">${finalStatus === 'CONFIRMED' ? 'AI Auto-Verified Appointment' : 'New Appointment Booked'}</h2>
+            <div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Status:</strong> ${finalStatus === 'CONFIRMED' ? '<span style="color: green; font-weight: bold;">CONFIRMED</span>' : '<span style="color: orange; font-weight: bold;">PENDING VERIFICATION (Requires Manual Review)</span>'}</p>
+              <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Phone:</strong> ${phone}</p>
+              ${instagram ? `<p><strong>Instagram:</strong> @${instagram}</p>` : ''}
+              <p><strong>Date/Time:</strong> ${new Date(date + "T12:00:00").toLocaleDateString()} @ ${time}</p>
+              ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+              ${photoUrl ? `<p><strong>Inspiration Photo:</strong></p><img src="${photoUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;" />` : ''}
+              ${receiptUrl ? `<p><strong>Payment Receipt:</strong></p><img src="${receiptUrl}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #28a745;" />` : ''}
+              ${itemsHtml}
+            </div>
+          </div>
+        `
+      };
+
+      if (receiptUrl) {
+        try {
+          const res = await fetch(receiptUrl);
+          const buffer = await res.arrayBuffer();
+          adminEmailPayload.attachments = [
+            {
+              filename: 'Payment_Receipt.jpg',
+              content: Buffer.from(buffer).toString('base64'),
+              contentType: res.headers.get('content-type') || 'image/jpeg'
+            }
+          ];
+        } catch(e) { console.error("Failed to attach receipt file", e); }
+      }
+      
+      await sendEmail(adminEmailPayload);
+    } catch (emailError) {
+      console.error("Failed to send booking emails:", emailError);
     }
 
     return NextResponse.json({ success: true, message: 'Booking created' }, { status: 200 });
@@ -375,6 +463,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
 
 export async function PATCH(request: Request) {
   try {

@@ -16,6 +16,13 @@ export default function DetailsForm() {
 
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Settings state
+  const [depositAmount, setDepositAmount] = useState(5000);
+  const [bankDetails, setBankDetails] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+
   useEffect(() => {
     startTimer();
   }, [startTimer]);
@@ -25,6 +32,31 @@ export default function DetailsForm() {
       router.push('/');
     }
   }, [timeLeft, router]);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.depositAmount !== undefined) setDepositAmount(data.depositAmount);
+          if (data.bankDetails) setBankDetails(data.bankDetails);
+        }
+      } catch (e) {
+        console.error("Failed to fetch settings", e);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // Restore payment modal state if page reloads
+  useEffect(() => {
+    const savedState = localStorage.getItem('estar_payment_started');
+    if (savedState === 'true' && items.length > 0) {
+      setShowPaymentModal(true);
+      setAgreed(true); // they already agreed if they got to payment
+    }
+  }, [items.length]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -81,83 +113,123 @@ export default function DetailsForm() {
     }
   };
 
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploadingReceipt(true);
+      try {
+        const uniqueFilename = `receipt_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const newBlob = await upload(uniqueFilename, file, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+        });
+        setReceiptUrl(newBlob.url);
+      } catch (error) {
+        console.error("Receipt upload failed", error);
+        toast.error("Failed to upload receipt. Please try again.");
+      } finally {
+        setIsUploadingReceipt(false);
+      }
+    }
+  };
+
+  const totalAmount = items.reduce((sum, item) => {
+    const digits = item.price.replace(/[^\d]/g, '');
+    const priceNum = digits ? parseInt(digits, 10) : 0;
+    return sum + (priceNum * (item.quantity || 1));
+  }, 0);
+
+  const requiredDeposit = Math.min(totalAmount, depositAmount);
+
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (isAdmin) {
       toast.error("You're an admin, remember? You want to book yourself? 🤨");
-      return; // Stops the function so no API call is made
+      return; 
     }
 
     if (agreed && formData.firstName && formData.phone) {
-      setIsSubmitting(true);
+      // Save details to CartContext
+      setBookingDetails(prev => ({
+        ...prev,
+        ...formData
+      }));
+      
+      // Save state to localStorage to survive bank app switching
+      localStorage.setItem('estar_payment_started', 'true');
+      setShowPaymentModal(true);
+    }
+  };
 
-      const total = items.reduce((sum, item) => {
-        const digits = item.price.replace(/[^\d]/g, '');
-        const priceNum = digits ? parseInt(digits, 10) : 0;
-        return sum + (priceNum * (item.quantity || 1));
-      }, 0);
+  const finalizeBooking = async () => {
+    if (!receiptUrl) {
+      toast.error("Please upload your payment receipt to continue.");
+      return;
+    }
 
-      const bookingRef = "ESN-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    setIsSubmitting(true);
+    const bookingRef = bookingDetails.bookingRef || "ESN-" + Math.random().toString(36).substr(2, 6).toUpperCase();
 
-      try {
-        // Prevent any lingering base64 strings from old localStorage state
-        const safePhotoUrl = bookingDetails.photoUrl && bookingDetails.photoUrl.startsWith('data:image') 
-          ? null 
-          : (bookingDetails.photoUrl || null);
+    try {
+      const safePhotoUrl = bookingDetails.photoUrl && bookingDetails.photoUrl.startsWith('data:image') 
+        ? null 
+        : (bookingDetails.photoUrl || null);
 
-        const res = await fetch('/api/bookings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...formData,
-            date: bookingDetails.date,
-            time: bookingDetails.time,
-            items,
-            total,
-            ref: bookingRef,
-            photoUrl: safePhotoUrl,
-            userId: auth.currentUser?.uid || null
-          })
-        });
-
-        const data = await res.json();
-
-        if (res.status === 409) {
-          toast.error("Sorry, this time slot was just booked by someone else. Please go back and select a different time.");
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (!data.success) {
-          toast.error(data.error || "Failed to book");
-          setIsSubmitting(false);
-          return;
-        }
-
-        setBookingDetails(prev => ({
-          ...prev,
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           ...formData,
-          bookingRef
-        }));
-        
-        // If guest booking, save ref to localStorage so it can be claimed upon signup
-        if (!auth.currentUser) {
-          try {
-            const existingStr = localStorage.getItem('guest_booking_refs');
-            const existing = existingStr ? JSON.parse(existingStr) : [];
-            existing.push(bookingRef);
-            localStorage.setItem('guest_booking_refs', JSON.stringify(existing));
-          } catch(e) {}
-        }
-        
-        router.push('/book/success');
-        
-      } catch (err: any) {
-        console.error(err);
-        toast.error("An error occurred. Please try again.");
+          date: bookingDetails.date,
+          time: bookingDetails.time,
+          items,
+          total: totalAmount,
+          ref: bookingRef,
+          photoUrl: safePhotoUrl,
+          receiptUrl: receiptUrl,
+          userId: auth.currentUser?.uid || null
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.status === 409) {
+        toast.error("Sorry, this time slot was just booked by someone else. Please go back and select a different time.");
         setIsSubmitting(false);
+        setShowPaymentModal(false);
+        localStorage.removeItem('estar_payment_started');
+        return;
       }
+
+      if (!data.success) {
+        toast.error(data.error || "Failed to book");
+        setIsSubmitting(false);
+        return;
+      }
+
+      setBookingDetails(prev => ({
+        ...prev,
+        ...formData,
+        bookingRef
+      }));
+      
+      if (!auth.currentUser) {
+        try {
+          const existingStr = localStorage.getItem('guest_booking_refs');
+          const existing = existingStr ? JSON.parse(existingStr) : [];
+          existing.push(bookingRef);
+          localStorage.setItem('guest_booking_refs', JSON.stringify(existing));
+        } catch(e) {}
+      }
+      
+      localStorage.removeItem('estar_payment_started');
+      router.push('/book/success');
+      
+    } catch (err: any) {
+      console.error(err);
+      toast.error("An error occurred. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -289,12 +361,94 @@ export default function DetailsForm() {
             {isSubmitting ? (
               <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             ) : (
-              isUploading ? "Uploading Image..." : "Confirm & Book"
+              isUploading ? "Uploading Image..." : "Proceed to Payment"
             )}
           </button>
         </div>
 
       </form>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-300 relative overflow-hidden">
+            <button 
+              onClick={() => {
+                setShowPaymentModal(false);
+                localStorage.removeItem('estar_payment_started');
+              }}
+              className="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 hover:text-black transition-colors"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <h2 className="text-2xl font-serif text-[#1A1414] mb-2">Secure Your Slot</h2>
+              <p className="text-gray-500 text-sm px-4">
+                Please transfer the required deposit to confirm your booking. <br/>
+                <span className="font-semibold text-primary mt-1 inline-block">Time left: {formatTime(timeLeft)}</span>
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 mb-6 text-center">
+              <p className="text-sm text-gray-500 mb-1">Required Deposit</p>
+              <p className="text-4xl font-bold text-[#1A1414] mb-4">₦{requiredDeposit.toLocaleString()}</p>
+              
+              <div className="bg-white rounded-xl p-4 border border-gray-200 text-left">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bank Details</p>
+                <p className="font-medium text-gray-800 whitespace-pre-wrap">{bankDetails || 'Moniepoint\n7049022919\nE.star SleekNails'}</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer group flex flex-col items-center justify-center relative overflow-hidden h-32">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  className="hidden" 
+                  onChange={handleReceiptUpload}
+                />
+                {receiptUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={receiptUrl} alt="Receipt" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <div className="w-10 h-10 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                      {isUploadingReceipt ? (
+                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      {isUploadingReceipt ? "Uploading..." : "Upload Payment Receipt"}
+                    </p>
+                  </>
+                )}
+              </label>
+            </div>
+
+            <button 
+              onClick={finalizeBooking}
+              disabled={!receiptUrl || isSubmitting}
+              className="w-full bg-[#1A1414] text-white py-4 rounded-xl font-bold hover:bg-black transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  Verifying...
+                </>
+              ) : (
+                "Verify & Complete Booking"
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
