@@ -8,7 +8,7 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmail = async ({ to, subject, html, attachments }: { to: string | string[], subject: string, html: string, attachments?: any[] }) => {
+export const sendEmail = async ({ to, replyTo, subject, html, attachments }: { to: string | string[], replyTo?: string, subject: string, html: string, attachments?: any[] }) => {
   if (false) {
     console.warn('SMTP_PASSWORD is not set. Email will not be sent.');
     return;
@@ -18,6 +18,7 @@ export const sendEmail = async ({ to, subject, html, attachments }: { to: string
     const info = await transporter.sendMail({
       from: `"E.star SleekNails" <${process.env.SMTP_EMAIL || 'oseghaleleonard39@gmail.com'}>`,
       to,
+      replyTo,
       subject,
       html,
       attachments,
