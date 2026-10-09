@@ -5,9 +5,15 @@ import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-export default function ServiceDetailsClient({ params }: { params: Promise<{ id: string }> }) {
+export default function ServiceDetailsClient({ params, inspiration }: { params: Promise<{ id: string }>, inspiration?: string }) {
   const resolvedParams = use(params);
-  const { items, addItem, updateQuantity, removeItem } = useCart();
+  const { items, addItem, updateQuantity, removeItem, setBookingDetails } = useCart();
+
+  useEffect(() => {
+    if (inspiration) {
+      setBookingDetails(prev => ({ ...prev, photoUrl: inspiration }));
+    }
+  }, [inspiration, setBookingDetails]);
 
   const [service, setService] = useState<any>(null);
   const [loading, setLoading] = useState(true);

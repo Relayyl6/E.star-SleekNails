@@ -38,7 +38,7 @@ export default async function GalleryImagePage({ params }: Props) {
   const image = { id: snap.id, ...snap.data() } as any;
 
   // determine booking link
-  const bookLink = image.serviceId ? `/services/${image.serviceId}` : '/book';
+  const bookLink = (image.serviceId ? `/services/${image.serviceId}` : '/book') + `?inspiration=${encodeURIComponent(image.url)}`;
 
   return (
     <div className="min-h-screen bg-[#1A1414] text-white pt-24 pb-20 px-4 md:px-8">

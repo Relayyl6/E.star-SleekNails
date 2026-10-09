@@ -91,6 +91,16 @@ export default function DateTimeSelection() {
     if (hasSoakOff && hasCustomisedSet) {
       hide3PM = true;
     }
+
+    // 3. Custom Service / Freestyle cannot be booked at 3 PM UNLESS they add 1 or 2 extras
+    const hasCustomOrFreestyle = items.some(item => 
+      item.name.toLowerCase().includes('custom') || 
+      item.name.toLowerCase().includes('freestyle')
+    );
+    
+    if (hasCustomOrFreestyle && totalExtrasCount === 0) {
+      hide3PM = true;
+    }
     
     if (hide3PM) {
       validHours = validHours.filter(h => h !== 15);
