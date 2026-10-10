@@ -504,7 +504,7 @@ export default function VendorDashboardPage() {
                     </div>
                   
                   <div className="flex gap-2 w-full md:w-auto md:justify-end">
-                    {booking.status?.toUpperCase() === 'PENDING' && (
+                    {(booking.status?.toUpperCase() === 'PENDING' || booking.status?.toUpperCase() === 'PENDING_VERIFICATION') && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'CONFIRMED'); }}
                         className="flex-1 md:flex-none px-4 py-2 md:px-3 md:py-1.5 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-sm font-bold transition-colors text-center"
@@ -768,6 +768,16 @@ export default function VendorDashboardPage() {
                 </div>
               )}
 
+              {/* Payment Receipt */}
+              {selectedBooking.receiptUrl && (
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Payment Receipt</p>
+                  <div className="rounded-xl overflow-hidden border border-gray-200">
+                    <img src={selectedBooking.receiptUrl} alt="Payment Receipt" className="w-full object-cover" />
+                  </div>
+                </div>
+              )}
+
               {/* Notes */}
               {selectedBooking.notes && (
                 <div>
@@ -781,12 +791,12 @@ export default function VendorDashboardPage() {
             
             {/* Actions Footer */}
             <div className="p-6 border-t border-gray-100 bg-white space-y-3">
-              {selectedBooking.status?.toUpperCase() === 'PENDING' && (
+              {(selectedBooking.status?.toUpperCase() === 'PENDING' || selectedBooking.status?.toUpperCase() === 'PENDING_VERIFICATION') && (
                 <button 
                   onClick={() => { updateBookingStatus(selectedBooking.id, 'CONFIRMED'); setSelectedBooking(null); }}
                   className="w-full py-3 bg-green-500 text-white hover:bg-green-600 rounded-xl font-bold transition-colors"
                 >
-                  Confirm Payment
+                  Confirm Payment (Approve)
                 </button>
               )}
 
