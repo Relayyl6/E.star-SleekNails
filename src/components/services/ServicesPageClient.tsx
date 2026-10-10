@@ -394,8 +394,7 @@ export default function ServicesPageClient() {
                     {customizingService.extras.map((ex: any) => {
                       const isChecked = selectedExtras.some(e => e.name === ex.name);
                       return (
-                        <label key={ex.name} onClick={(e) => {
-                          e.preventDefault();
+                        <label key={ex.name} onClick={() => {
                           if (isChecked) {
                             setSelectedExtras(selectedExtras.filter(e => e.name !== ex.name));
                           } else {

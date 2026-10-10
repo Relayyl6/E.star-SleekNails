@@ -233,8 +233,7 @@ export default function ServiceDetailsClient({ params, inspiration }: { params: 
                   {service.extras.map((ex: any) => {
                     const isChecked = selectedExtras.some(e => e.name === ex.name);
                     return (
-                      <label key={ex.name} onClick={(e) => {
-                        e.preventDefault();
+                      <label key={ex.name} onClick={() => {
                         if (isChecked) {
                           setSelectedExtras(prev => prev.filter(p => p.name !== ex.name));
                         } else {

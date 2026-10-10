@@ -195,7 +195,9 @@ export default function VendorServicesPage() {
         }
       }
 
+      const existingService = services.find(s => s.id === id);
       const payload = {
+        ...existingService,
         id,
         name,
         category,
