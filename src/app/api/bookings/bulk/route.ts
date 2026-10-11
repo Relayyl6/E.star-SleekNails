@@ -35,24 +35,32 @@ export async function POST(request: Request) {
     if (endDate) {
       query = query.where('date', '<=', endDate);
     }
-    if (status && status !== 'ALL') {
-      query = query.where('status', '==', status);
-    }
-
     const snapshot = await query.get();
+    let docs = snapshot.docs;
+
+    if (status && status !== 'ALL') {
+      if (status === 'PENDING') {
+        docs = docs.filter((doc: any) => {
+          const s = (doc.data().status || '').toUpperCase();
+          return s === 'PENDING' || s === 'PENDING_VERIFICATION' || !s;
+        });
+      } else {
+        docs = docs.filter((doc: any) => (doc.data().status || '').toUpperCase() === status.toUpperCase());
+      }
+    }
     
-    if (snapshot.empty) {
+    if (docs.length === 0) {
       return NextResponse.json({ success: true, count: 0, message: 'No bookings matched the criteria.' });
     }
 
     const batch = db.batch();
-    snapshot.docs.forEach((doc: any) => {
+    docs.forEach((doc: any) => {
       batch.delete(doc.ref);
     });
 
     await batch.commit();
 
-    return NextResponse.json({ success: true, count: snapshot.size });
+    return NextResponse.json({ success: true, count: docs.length });
   } catch (error: any) {
     console.error('Bulk DELETE Booking Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

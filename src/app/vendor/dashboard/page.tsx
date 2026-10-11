@@ -150,7 +150,8 @@ export default function VendorDashboardPage() {
   };
 
   const handleDownloadDocument = (booking: any) => {
-    const docTitle = booking.status?.toUpperCase() === 'COMPLETED' ? 'OFFICIAL RECEIPT' : booking.status?.toUpperCase() === 'PENDING' ? 'PAYMENT REQUEST' : 'INVOICE';
+    const isPending = !booking.status || booking.status?.toUpperCase() === 'PENDING' || booking.status?.toUpperCase() === 'PENDING_VERIFICATION';
+    const docTitle = booking.status?.toUpperCase() === 'COMPLETED' ? 'OFFICIAL RECEIPT' : isPending ? 'PAYMENT REQUEST' : 'INVOICE';
     
     const invoiceHtml = `
       <!DOCTYPE html>
@@ -232,7 +233,7 @@ export default function VendorDashboardPage() {
             </tbody>
           </table>
           
-          ${(booking.status?.toUpperCase() === 'PENDING') ? `
+          ${isPending ? `
           <div style="margin-top: 40px; padding: 20px; background-color: #f9f9f9; border-left: 4px solid #1A1414;">
             <h3 style="margin-top: 0; color: #1A1414; font-size: 14px; text-transform: uppercase;">Payment Instructions</h3>
             <p style="margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap;">Please transfer your payment to the following account to confirm your booking:<br/><br/><strong>${settings?.bankDetails?.trim() ? settings.bankDetails : 'Moniepoint MFB\\n7049022919\\nE.star Sleeknails Luxury Studio - E_star Sleeknails'}</strong></p>
@@ -295,7 +296,11 @@ export default function VendorDashboardPage() {
 
     // Filter by Status
     if (exportConfig.status !== 'ALL') {
-      filtered = filtered.filter(b => b.status === exportConfig.status);
+      if (exportConfig.status === 'PENDING') {
+        filtered = filtered.filter(b => !b.status || b.status.toUpperCase() === 'PENDING' || b.status.toUpperCase() === 'PENDING_VERIFICATION');
+      } else {
+        filtered = filtered.filter(b => b.status === exportConfig.status);
+      }
     }
 
     // Sort
@@ -377,7 +382,7 @@ export default function VendorDashboardPage() {
           </div>
           <div className="p-6 border border-gray-100 rounded-2xl bg-gray-50 flex flex-col justify-center">
             <p className="text-base md:text-lg font-semibold text-gray-600 mb-2">Pending</p>
-            <p className="text-4xl md:text-5xl font-bold text-gray-900">{bookings.filter(b => !b.status || b.status.toUpperCase() === 'PENDING').length}</p>
+            <p className="text-4xl md:text-5xl font-bold text-gray-900">{bookings.filter(b => !b.status || b.status.toUpperCase() === 'PENDING' || b.status.toUpperCase() === 'PENDING_VERIFICATION').length}</p>
           </div>
           <div className="p-6 border border-gray-100 rounded-2xl bg-gray-50 flex flex-col justify-center">
             <p className="text-base md:text-lg font-semibold text-gray-600 mb-2">Upcoming</p>
@@ -412,6 +417,7 @@ export default function VendorDashboardPage() {
           {bookings.map(booking => {
             const isConfirmed = booking.status?.toUpperCase() === 'CONFIRMED';
             const isWaitlist = booking.status?.toUpperCase() === 'WAITLIST';
+            const isPendingVerification = booking.status?.toUpperCase() === 'PENDING_VERIFICATION';
             
             return (
               <div 
@@ -438,9 +444,10 @@ export default function VendorDashboardPage() {
                         booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
                         isConfirmed ? 'bg-green-100 text-green-700' : 
                         isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
+                        isPendingVerification ? 'bg-amber-100 text-amber-800' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {booking.status || 'PENDING'}
+                        {isPendingVerification ? 'PENDING (VERIFY)' : (booking.status || 'PENDING')}
                       </span>
                       {(booking.status?.toUpperCase() === 'CANCELLED' || isWaitlist) && (
                         <button
@@ -488,9 +495,10 @@ export default function VendorDashboardPage() {
                         booking.status?.toUpperCase() === 'COMPLETED' ? 'bg-black text-white' :
                         isConfirmed ? 'bg-green-100 text-green-700' : 
                         isWaitlist ? 'bg-yellow-100 text-yellow-700' : 
+                        isPendingVerification ? 'bg-amber-100 text-amber-800' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {booking.status || 'PENDING'}
+                        {isPendingVerification ? 'PENDING (VERIFY)' : (booking.status || 'PENDING')}
                       </span>
                       {(booking.status?.toUpperCase() === 'CANCELLED' || isWaitlist) && (
                         <button
@@ -724,9 +732,10 @@ export default function VendorDashboardPage() {
                   <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
                       selectedBooking.status?.toUpperCase() === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 
                       selectedBooking.status?.toUpperCase() === 'WAITLIST' ? 'bg-yellow-100 text-yellow-700' : 
+                      selectedBooking.status?.toUpperCase() === 'PENDING_VERIFICATION' ? 'bg-amber-100 text-amber-800' :
                       'bg-gray-200 text-gray-700'
                     }`}>
-                      {selectedBooking.status || 'PENDING'}
+                      {selectedBooking.status?.toUpperCase() === 'PENDING_VERIFICATION' ? 'PENDING (VERIFY)' : (selectedBooking.status || 'PENDING')}
                   </span>
                 </div>
               </div>

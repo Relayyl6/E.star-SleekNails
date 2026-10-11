@@ -83,7 +83,7 @@ export default function MyBookingsPage() {
   const filteredBookings = bookings.filter(b => {
     const status = (b.status || '').toUpperCase();
     if (activeTab === 'Waitlist') return status === 'WAITLIST';
-    if (activeTab === 'Upcoming') return status === 'CONFIRMED' || status === 'PENDING';
+    if (activeTab === 'Upcoming') return status === 'CONFIRMED' || status === 'PENDING' || status === 'PENDING_VERIFICATION' || !status;
     return status === 'COMPLETED' || status === 'CANCELLED';
   });
 
@@ -112,7 +112,8 @@ export default function MyBookingsPage() {
   };
 
   const handleDownloadInvoice = (booking: any) => {
-    const docTitle = booking.status?.toUpperCase() === 'COMPLETED' ? 'OFFICIAL RECEIPT' : booking.status?.toUpperCase() === 'PENDING' ? 'PAYMENT REQUEST' : 'INVOICE';
+    const isPending = !booking.status || booking.status?.toUpperCase() === 'PENDING' || booking.status?.toUpperCase() === 'PENDING_VERIFICATION';
+    const docTitle = booking.status?.toUpperCase() === 'COMPLETED' ? 'OFFICIAL RECEIPT' : isPending ? 'PAYMENT REQUEST' : 'INVOICE';
     
     const invoiceHtml = `
       <!DOCTYPE html>
@@ -194,7 +195,7 @@ export default function MyBookingsPage() {
             </tbody>
           </table>
           
-          ${(booking.status?.toUpperCase() === 'PENDING') ? `
+          ${isPending ? `
           <div style="margin-top: 40px; padding: 20px; background-color: #f9f9f9; border-left: 4px solid #1A1414;">
             <h3 style="margin-top: 0; color: #1A1414; font-size: 14px; text-transform: uppercase;">Payment Instructions</h3>
             <p style="margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap;">Please transfer your payment to the following account to confirm your booking:<br/><br/><strong>${settings?.bankDetails?.trim() ? settings.bankDetails : 'Moniepoint MFB\\n7049022919\\nE.star Sleeknails Luxury Studio - E_star Sleeknails'}</strong></p>
@@ -257,8 +258,13 @@ export default function MyBookingsPage() {
                       {new Date(booking.date + "T12:00:00").toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       {booking.time ? ` at ${booking.time}` : ''}
                     </h3>
-                    <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-md uppercase ${booking.status?.toUpperCase() === 'CANCELLED' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
-                      {booking.status || 'PENDING'}
+                    <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-md uppercase ${
+                      booking.status?.toUpperCase() === 'CANCELLED' ? 'bg-red-50 text-red-600' : 
+                      booking.status?.toUpperCase() === 'CONFIRMED' ? 'bg-green-50 text-green-700' :
+                      booking.status?.toUpperCase() === 'PENDING_VERIFICATION' ? 'bg-amber-50 text-amber-800' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {booking.status?.toUpperCase() === 'PENDING_VERIFICATION' ? 'PENDING (VERIFY)' : (booking.status || 'PENDING')}
                     </span>
                   </div>
                   {booking.status?.toUpperCase() !== 'WAITLIST' ? (
