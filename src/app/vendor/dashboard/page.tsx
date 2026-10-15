@@ -149,6 +149,26 @@ export default function VendorDashboardPage() {
     setSendingReceipt(false);
   };
 
+  const formatBookingTotal = (b: any) => {
+    if (!b) return '₦0';
+    let totalStr = String(b.total || '0').trim();
+    if (!totalStr.includes('₦') && !isNaN(Number(totalStr.replace(/[^\d]/g, '')))) {
+      const num = parseInt(totalStr.replace(/[^\d]/g, ''), 10) || 0;
+      totalStr = `₦${num.toLocaleString()}`;
+    }
+    const hasPlus = b.items?.some((item: any) => 
+      item.price?.includes('+') || 
+      (item.selectedExtras && item.selectedExtras.length > 0) || 
+      item.name?.toLowerCase().includes('freestyle') || 
+      item.name?.toLowerCase().includes('custom') ||
+      item.selectedDesign?.hasPlus
+    );
+    if (hasPlus && !totalStr.includes('+')) {
+      totalStr += '+';
+    }
+    return totalStr;
+  };
+
   const handleDownloadDocument = (booking: any) => {
     const isPending = !booking.status || booking.status?.toUpperCase() === 'PENDING' || booking.status?.toUpperCase() === 'PENDING_VERIFICATION';
     const docTitle = booking.status?.toUpperCase() === 'COMPLETED' ? 'OFFICIAL RECEIPT' : isPending ? 'PAYMENT REQUEST' : 'INVOICE';
@@ -217,9 +237,9 @@ export default function VendorDashboardPage() {
                   <td>
                     <div style="font-weight: bold;">${item.name}</div>
                     <div style="font-size: 11px; color: #666; margin-top: 4px;">
-                      ${item.selectedLength ? `<div>&bull; Length: ${item.selectedLength.name}</div>` : ''}
-                      ${item.selectedDesign ? `<div>&bull; Design: ${item.selectedDesign.name}</div>` : ''}
-                      ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name}</div>`).join('') || ''}
+                      ${item.selectedLength ? `<div>&bull; Length: ${item.selectedLength.name} (+₦${Number(item.selectedLength.price).toLocaleString()})</div>` : ''}
+                      ${item.selectedDesign ? `<div>&bull; Design: ${item.selectedDesign.name} (+₦${Number(item.selectedDesign.price).toLocaleString()})</div>` : ''}
+                      ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name} (+₦${Number(e.price).toLocaleString()})</div>`).join('') || ''}
                     </div>
                   </td>
                   <td style="vertical-align: top;">${item.quantity || 1}</td>
@@ -228,7 +248,7 @@ export default function VendorDashboardPage() {
               `).join('') || `<tr><td>Custom Service</td><td>1</td><td style="text-align: right;">-</td></tr>`}
               <tr class="total-row">
                 <td colspan="2" style="text-align: right; padding-top: 20px;">${booking.status?.toUpperCase() === 'COMPLETED' ? 'Total Paid:' : 'Total Amount:'}</td>
-                <td style="text-align: right; font-size: 18px; padding-top: 20px;">${String(booking.total || '0').includes('₦') ? booking.total : `₦${booking.total || '0'}`}</td>
+                <td style="text-align: right; font-size: 18px; padding-top: 20px;">${formatBookingTotal(booking)}</td>
               </tr>
             </tbody>
           </table>
@@ -484,7 +504,7 @@ export default function VendorDashboardPage() {
                     <p className="text-xs md:text-sm font-medium text-gray-800 line-clamp-1 mb-1 truncate">
                       {booking.items?.map((item: any) => item.name).join(', ') || (isWaitlist ? 'Waitlist Request' : 'Custom')}
                     </p>
-                    <p className="text-sm md:text-base font-bold text-primary">{booking.total || (isWaitlist ? '-' : '₦0')}</p>
+                    <p className="text-sm md:text-base font-bold text-primary">{isWaitlist ? '-' : formatBookingTotal(booking)}</p>
                   </div>
                 </div>
 
@@ -761,8 +781,8 @@ export default function VendorDashboardPage() {
                     </div>
                   ))}
                   <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
-                    <p className="font-bold text-gray-900">Total</p>
-                    <p className="font-bold text-primary text-lg">{selectedBooking.total}</p>
+                    <p className="font-bold text-gray-900">Total Estimated</p>
+                    <p className="font-bold text-primary text-lg">{formatBookingTotal(selectedBooking)}</p>
                   </div>
                 </div>
               </div>

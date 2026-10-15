@@ -189,8 +189,8 @@ export default function MyBookingsPage() {
                   </tr>
                 `).join('') || `<tr><td>Custom Service</td><td>1</td><td style="text-align: right;">-</td></tr>`}
                 <tr class="total-row">
-                <td colspan="2" style="text-align: right; padding-top: 20px;">Total Amount:</td>
-                <td style="text-align: right; font-size: 18px; padding-top: 20px;">${String(booking.total || '0').includes('₦') ? booking.total : `₦${booking.total || '0'}`}</td>
+                <td colspan="2" style="text-align: right; padding-top: 20px;">${(() => { const hp = booking.items?.some((i: any) => i.selectedExtras?.length > 0 || i.selectedDesign?.hasPlus || i.isFreestyle); return hp ? 'Total Estimated:' : 'Total Amount:'; })()}</td>
+                <td style="text-align: right; font-size: 18px; padding-top: 20px;">${(() => { const rawTotal = String(booking.total || '0'); const hasNaira = rawTotal.includes('₦'); const hasPlus = booking.items?.some((i: any) => i.selectedExtras?.length > 0 || i.selectedDesign?.hasPlus || i.isFreestyle) || rawTotal.includes('+'); const formatted = hasNaira ? rawTotal : `₦${rawTotal}`; return hasPlus && !formatted.includes('+') ? formatted + '+' : formatted; })()}</td>
               </tr>
             </tbody>
           </table>
