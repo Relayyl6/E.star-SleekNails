@@ -34,7 +34,7 @@ export default function ServiceDetailsClient({ params, inspiration }: { params: 
             : found.image ? [found.image] : [];
           setActiveImage(imgs[0] || '');
           setSelectedLength(found.hasLengths && found.lengths?.length > 0 ? found.lengths[0] : null);
-          setSelectedDesign(found.hasDesignTiers && found.designTiers?.length > 0 && found.designTierRequired ? found.designTiers[0] : null);
+          setSelectedDesign(null);
           setSelectedExtras([]);
         }
       })
@@ -57,30 +57,20 @@ export default function ServiceDetailsClient({ params, inspiration }: { params: 
       toast.error('Please select a length');
       return;
     }
-    
-    if (service.hasDesignTiers && service.designTiers?.length > 0 && service.designTierRequired && !selectedDesign) {
-      toast.error('Please select a design tier');
-      return;
+
+    // Calculate total: Plain base price + optional design tier + extras
+    const isFreestyle = service.isFreestyle || service.id === 'freestyle-custom-set';
+    let base = 0;
+    if (isFreestyle) {
+      base = service.basePrice || 30000;
+    } else if (service.hasLengths && service.lengths?.length > 0 && selectedLength) {
+      base = selectedLength.price;
+    } else {
+      base = service.basePrice || (service.price ? parseInt(String(service.price).replace(/\D/g, '')) : 0) || 0;
     }
 
-    const isFreestyle = service.isFreestyle || service.id === 'freestyle-custom-set';
-    let total = 0;
-    if (isFreestyle) {
-      total = service.basePrice || 30000;
-      if (selectedDesign) total += selectedDesign.price;
-    } else if (service.hasLengths && service.lengths?.length > 0 && selectedLength) {
-      total = selectedLength.price;
-      if (selectedDesign) total += selectedDesign.price;
-    } else if (selectedDesign) {
-      const basePrice = service.basePrice || 0;
-      if (basePrice > 0 && selectedDesign.price < basePrice) {
-        total = basePrice + selectedDesign.price;
-      } else {
-        total = selectedDesign.price;
-      }
-    } else {
-      total = service.basePrice || (service.price ? parseInt(String(service.price).replace(/\D/g, '')) : 0) || 0;
-    }
+    let total = base;
+    if (selectedDesign) total += selectedDesign.price;
     selectedExtras.forEach((e: any) => total += e.price);
     
     const formattedPrice = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total);
@@ -181,23 +171,17 @@ export default function ServiceDetailsClient({ params, inspiration }: { params: 
                     const isFreestyle = service.isFreestyle || service.id === 'freestyle-custom-set';
                     const hasSelections = selectedLength || selectedDesign || selectedExtras.length > 0;
                     
-                    let total = 0;
+                    let base = 0;
                     if (isFreestyle) {
-                      total = service.basePrice || 30000;
-                      if (selectedDesign) total += selectedDesign.price;
+                      base = service.basePrice || 30000;
                     } else if (service.hasLengths && service.lengths?.length > 0 && selectedLength) {
-                      total = selectedLength.price;
-                      if (selectedDesign) total += selectedDesign.price;
-                    } else if (selectedDesign) {
-                      const basePrice = service.basePrice || 0;
-                      if (basePrice > 0 && selectedDesign.price < basePrice) {
-                        total = basePrice + selectedDesign.price;
-                      } else {
-                        total = selectedDesign.price;
-                      }
+                      base = selectedLength.price;
                     } else {
-                      total = service.basePrice || (service.price ? parseInt(String(service.price).replace(/\D/g, '')) : 0) || 0;
+                      base = service.basePrice || (service.price ? parseInt(String(service.price).replace(/\D/g, '')) : 0) || 0;
                     }
+
+                    let total = base;
+                    if (selectedDesign) total += selectedDesign.price;
                     selectedExtras.forEach((e: any) => total += e.price);
 
                     const hasPlus = isFreestyle || selectedExtras.length > 0 || selectedDesign?.hasPlus;
@@ -247,21 +231,21 @@ export default function ServiceDetailsClient({ params, inspiration }: { params: 
               </div>
             )}
 
-            {service.hasDesignTiers && service.designTiers?.length > 0 && (
+            {service.hasDesignTiers && service.designTiers?.filter((t: any) => t.name.trim().toLowerCase() !== 'plain').length > 0 && (
               <div className="space-y-4 mb-8 shrink-0">
                 <h3 className="font-bold text-[#1A1414] flex items-center justify-between text-lg">
                   Design Tier <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">
-                    {service.designTierRequired ? 'Required' : 'Optional'}
+                    Optional
                   </span>
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {service.designTiers.map((tier: any) => {
+                  {service.designTiers.filter((t: any) => t.name.trim().toLowerCase() !== 'plain').map((tier: any) => {
                     const isTierSelected = selectedDesign?.name === tier.name;
                     return (
                       <label 
                         key={tier.name} 
                         onClick={() => {
-                          if (isTierSelected && !service.designTierRequired) {
+                          if (isTierSelected) {
                             setSelectedDesign(null);
                           } else {
                             setSelectedDesign(tier);
@@ -275,7 +259,7 @@ export default function ServiceDetailsClient({ params, inspiration }: { params: 
                           </div>
                           <span className="font-medium text-gray-800">{tier.name}</span>
                         </div>
-                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}</span>
+                        <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}</span>
                       </label>
                     );
                   })}

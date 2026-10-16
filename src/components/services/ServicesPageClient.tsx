@@ -104,7 +104,7 @@ export default function ServicesPageClient() {
       if (service && (service.hasLengths || service.hasDesignTiers || service.hasExtras)) {
         setCustomizingService(service);
         setSelectedLength(service.hasLengths && service.lengths?.length > 0 ? service.lengths[0] : null);
-        setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 && service.designTierRequired ? service.designTiers[0] : null);
+        setSelectedDesign(null);
         setSelectedExtras([]);
       }
     }
@@ -114,7 +114,7 @@ export default function ServicesPageClient() {
     if (service.hasLengths || service.hasDesignTiers || service.hasExtras) {
       setCustomizingService(service);
       setSelectedLength(service.hasLengths && service.lengths?.length > 0 ? service.lengths[0] : null);
-      setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 && service.designTierRequired ? service.designTiers[0] : null);
+      setSelectedDesign(null);
       setSelectedExtras([]);
     } else {
       // Direct add
@@ -138,31 +138,20 @@ export default function ServicesPageClient() {
       toast.error('Please select a length');
       return;
     }
-    
-    if (customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && customizingService.designTierRequired && !selectedDesign) {
-      toast.error('Please select a design tier');
-      return;
+
+    // Calculate total: Plain base price + optional design tier + extras
+    const isFreestyle = customizingService.isFreestyle || customizingService.id === 'freestyle-custom-set';
+    let base = 0;
+    if (isFreestyle) {
+      base = customizingService.basePrice || 30000;
+    } else if (customizingService.hasLengths && customizingService.lengths?.length > 0 && selectedLength) {
+      base = selectedLength.price;
+    } else {
+      base = customizingService.basePrice || (customizingService.price ? parseInt(String(customizingService.price).replace(/\D/g, '')) : 0) || 0;
     }
 
-    // Calculate total
-    const isFreestyle = customizingService.isFreestyle || customizingService.id === 'freestyle-custom-set';
-    let total = 0;
-    if (isFreestyle) {
-      total = customizingService.basePrice || 30000;
-      if (selectedDesign) total += selectedDesign.price;
-    } else if (customizingService.hasLengths && customizingService.lengths?.length > 0 && selectedLength) {
-      total = selectedLength.price;
-      if (selectedDesign) total += selectedDesign.price;
-    } else if (selectedDesign) {
-      const basePrice = customizingService.basePrice || 0;
-      if (basePrice > 0 && selectedDesign.price < basePrice) {
-        total = basePrice + selectedDesign.price;
-      } else {
-        total = selectedDesign.price;
-      }
-    } else {
-      total = customizingService.basePrice || (customizingService.price ? parseInt(String(customizingService.price).replace(/\D/g, '')) : 0) || 0;
-    }
+    let total = base;
+    if (selectedDesign) total += selectedDesign.price;
     selectedExtras.forEach(e => total += e.price);
     
     const formattedPrice = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total);
@@ -384,21 +373,21 @@ export default function ServicesPageClient() {
                 </div>
               )}
 
-              {customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && (
+              {customizingService.hasDesignTiers && customizingService.designTiers?.filter((t: any) => t.name.trim().toLowerCase() !== 'plain').length > 0 && (
                 <div className="space-y-4 pt-2">
                   <h3 className="font-bold text-[#1A1414] flex items-center justify-between">
                     Design Tier <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">
-                      {customizingService.designTierRequired ? 'Required' : 'Optional'}
+                      Optional
                     </span>
                   </h3>
                   <div className="space-y-2">
-                    {customizingService.designTiers.map((tier: any) => {
+                    {customizingService.designTiers.filter((t: any) => t.name.trim().toLowerCase() !== 'plain').map((tier: any) => {
                       const isTierSelected = selectedDesign?.name === tier.name;
                       return (
                         <label 
                           key={tier.name} 
                           onClick={() => {
-                            if (isTierSelected && !customizingService.designTierRequired) {
+                            if (isTierSelected) {
                               setSelectedDesign(null);
                             } else {
                               setSelectedDesign(tier);
@@ -413,7 +402,7 @@ export default function ServicesPageClient() {
                             <span className="font-medium text-gray-800">{tier.name}</span>
                           </div>
                           <span className="text-sm font-bold text-gray-600">
-                            {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}
+                            +{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}
                           </span>
                         </label>
                       );
@@ -456,23 +445,16 @@ export default function ServicesPageClient() {
             <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] relative z-10">
               {(() => {
                 const isFreestyle = customizingService.isFreestyle || customizingService.id === 'freestyle-custom-set';
-                let currentTotal = 0;
+                let base = 0;
                 if (isFreestyle) {
-                  currentTotal = customizingService.basePrice || 30000;
-                  if (selectedDesign) currentTotal += selectedDesign.price;
+                  base = customizingService.basePrice || 30000;
                 } else if (customizingService.hasLengths && customizingService.lengths?.length > 0 && selectedLength) {
-                  currentTotal = selectedLength.price;
-                  if (selectedDesign) currentTotal += selectedDesign.price;
-                } else if (selectedDesign) {
-                  const basePrice = customizingService.basePrice || 0;
-                  if (basePrice > 0 && selectedDesign.price < basePrice) {
-                    currentTotal = basePrice + selectedDesign.price;
-                  } else {
-                    currentTotal = selectedDesign.price;
-                  }
+                  base = selectedLength.price;
                 } else {
-                  currentTotal = customizingService.basePrice || (customizingService.price ? parseInt(String(customizingService.price).replace(/\D/g, '')) : 0) || 0;
+                  base = customizingService.basePrice || (customizingService.price ? parseInt(String(customizingService.price).replace(/\D/g, '')) : 0) || 0;
                 }
+                let currentTotal = base;
+                if (selectedDesign) currentTotal += selectedDesign.price;
                 selectedExtras.forEach(e => currentTotal += e.price);
                 const hasPlusSign = isFreestyle || selectedExtras.length > 0 || selectedDesign?.hasPlus;
                 return (

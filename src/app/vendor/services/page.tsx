@@ -27,7 +27,6 @@ export default function VendorServicesPage() {
   const [hasLengths, setHasLengths] = useState(false);
   const [lengths, setLengths] = useState<any[]>([]);
   const [hasDesignTiers, setHasDesignTiers] = useState(false);
-  const [designTierRequired, setDesignTierRequired] = useState(false);
   const [designTiers, setDesignTiers] = useState<any[]>([]);
   const [hasExtras, setHasExtras] = useState(false);
   const [extras, setExtras] = useState<any[]>([]);
@@ -78,7 +77,6 @@ export default function VendorServicesPage() {
       setHasLengths(service.hasLengths || false);
       setLengths(service.lengths || []);
       setHasDesignTiers(service.hasDesignTiers || false);
-      setDesignTierRequired(service.designTierRequired || false);
       setDesignTiers(service.designTiers || []);
       setHasExtras(service.isFreestyle ? true : (service.hasExtras || false));
       setExtras(service.extras && service.extras.length > 0 ? service.extras : (service.isFreestyle ? [
@@ -103,7 +101,6 @@ export default function VendorServicesPage() {
       setHasLengths(false);
       setLengths([]);
       setHasDesignTiers(false);
-      setDesignTierRequired(false);
       setDesignTiers([]);
       setHasExtras(false);
       setExtras([]);
@@ -230,7 +227,6 @@ export default function VendorServicesPage() {
         hasLengths,
         lengths,
         hasDesignTiers,
-        designTierRequired: hasDesignTiers ? designTierRequired : false,
         designTiers,
         hasExtras: isFreestyleService ? true : hasExtras,
         extras: isFreestyleService && (!extras || extras.length === 0) ? (existingService?.extras || []) : extras,
@@ -419,32 +415,17 @@ export default function VendorServicesPage() {
                       type="checkbox" 
                       id="hasDesignTiers" 
                       checked={hasDesignTiers} 
-                      onChange={e => {
-                        setHasDesignTiers(e.target.checked);
-                        if (!e.target.checked) setDesignTierRequired(false);
-                      }} 
+                      onChange={e => setHasDesignTiers(e.target.checked)} 
                       className="rounded border-gray-300 text-primary focus:ring-primary" 
                     />
-                    <label htmlFor="hasDesignTiers" className="text-sm font-semibold text-gray-700">Allow Design Tiers</label>
+                    <label htmlFor="hasDesignTiers" className="text-sm font-semibold text-gray-700">Allow Design Tiers (Optional add-ons to Plain)</label>
                   </div>
                   {hasDesignTiers && (
                     <div className="pl-6 space-y-3">
-                      <div className="flex items-center gap-2 pb-1">
-                        <input 
-                          type="checkbox" 
-                          id="designTierRequired" 
-                          checked={designTierRequired} 
-                          onChange={e => setDesignTierRequired(e.target.checked)} 
-                          className="rounded border-gray-300 text-primary focus:ring-primary" 
-                        />
-                        <label htmlFor="designTierRequired" className="text-xs font-medium text-gray-600">
-                          Design Tier is Required (Customer must select one)
-                        </label>
-                      </div>
                       {designTiers.map((opt, i) => (
                         <div key={i} className="flex gap-2 items-center">
-                          <input type="text" placeholder="e.g. Basic Design" value={opt.name} onChange={e => { const newOpts = [...designTiers]; newOpts[i].name = e.target.value; setDesignTiers(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
-                          <input type="number" placeholder="₦ Price" value={opt.price} onChange={e => { const newOpts = [...designTiers]; newOpts[i].price = Number(e.target.value); setDesignTiers(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <input type="text" placeholder="e.g. Chrome Art" value={opt.name} onChange={e => { const newOpts = [...designTiers]; newOpts[i].name = e.target.value; setDesignTiers(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...designTiers]; newOpts[i].price = Number(e.target.value); setDesignTiers(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
                           <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
                             <input type="checkbox" checked={opt.hasPlus || false} onChange={e => { const newOpts = [...designTiers]; newOpts[i].hasPlus = e.target.checked; setDesignTiers(newOpts); }} className="rounded border-gray-300 text-primary focus:ring-primary" />
                             Add "+"
