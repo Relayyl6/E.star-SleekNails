@@ -23,6 +23,13 @@ export default function SuccessPage() {
     return sum + (priceNum * (item.quantity || 1));
   }, 0);
 
+  const hasPlus = snapshotItems.some(item => 
+    item.price?.includes('+') || 
+    (item.selectedExtras && item.selectedExtras.length > 0) || 
+    item.name?.toLowerCase().includes('freestyle') || 
+    item.name?.toLowerCase().includes('custom')
+  );
+
   useEffect(() => {
     setMounted(true);
     setIsOpen(false);
@@ -152,11 +159,11 @@ export default function SuccessPage() {
             <div className="w-64 space-y-3">
               <div className="flex justify-between text-sm text-gray-500">
                 <span>Subtotal</span>
-                <span>{formatMoney(total)}</span>
+                <span>{formatMoney(total)}{hasPlus ? '+' : ''}</span>
               </div>
               <div className="flex justify-between font-bold text-lg text-[#1A1414] border-t border-gray-100 pt-3">
                 <span>Total</span>
-                <span>{formatMoney(total)}</span>
+                <span>{formatMoney(total)}{hasPlus ? '+' : ''}</span>
               </div>
             </div>
           </div>

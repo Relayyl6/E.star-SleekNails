@@ -35,6 +35,13 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
     return sum + (priceNum * item.quantity);
   }, 0);
 
+  const hasPlus = items.some(item => 
+    item.price?.includes('+') || 
+    (item.selectedExtras && item.selectedExtras.length > 0) || 
+    item.name?.toLowerCase().includes('freestyle') || 
+    item.name?.toLowerCase().includes('custom')
+  );
+
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount).replace('NGN', '₦');
   };
@@ -134,7 +141,7 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                 <div className="border-t border-black/5 pt-6 space-y-3">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>{formatMoney(total)}</span>
+                    <span>{formatMoney(total)}{hasPlus ? '+' : ''}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Deposit Required</span>
@@ -142,7 +149,7 @@ export default function BookLayout({ children }: { children: React.ReactNode }) 
                   </div>
                   <div className="flex justify-between text-xl font-bold text-[#1A1414] pt-3 border-t border-black/5">
                     <span>Total Estimated</span>
-                    <span>{formatMoney(total)}</span>
+                    <span>{formatMoney(total)}{hasPlus ? '+' : ''}</span>
                   </div>
                 </div>
 

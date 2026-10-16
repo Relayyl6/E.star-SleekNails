@@ -245,6 +245,24 @@ export async function POST(request: Request) {
       }
     }
 
+    const formatMoney = (amount: number) => {
+      return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount).replace('NGN', '₦');
+    };
+
+    const hasPlus = items && items.some((item: any) => 
+      item.price?.includes('+') || 
+      (item.selectedExtras && item.selectedExtras.length > 0) || 
+      item.name?.toLowerCase().includes('freestyle') || 
+      item.name?.toLowerCase().includes('custom') ||
+      item.selectedDesign?.hasPlus
+    );
+
+    const totalNum = typeof total === 'number' 
+      ? total 
+      : parseInt(String(total || '0').replace(/[^\d]/g, ''), 10) || 0;
+
+    const formattedTotal = `${formatMoney(totalNum)}${hasPlus ? '+' : ''}`;
+
     // Save to Firestore
     await bookingsRef.doc(ref).set({
       email: email ? email.toLowerCase().trim() : '',
@@ -257,17 +275,13 @@ export async function POST(request: Request) {
       date,
       time,
       items,
-      total,
+      total: formattedTotal,
       photoUrl: photoUrl || null,
       receiptUrl: receiptUrl || null,
       userId: userId || null,
       status: finalStatus,
       createdAt: new Date().toISOString()
     });
-
-    const formatMoney = (amount: number) => {
-      return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(amount).replace('NGN', '₦');
-    };
 
     const itemsHtml = items && items.length > 0 
       ? `<table style="width: 100%; margin-top: 10px; border-collapse: collapse;">
@@ -278,15 +292,15 @@ export async function POST(request: Request) {
                 <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
                   ${item.selectedLength ? `<div>&bull; Length: ${item.selectedLength.name}</div>` : ''}
                   ${item.selectedDesign ? `<div>&bull; Design: ${item.selectedDesign.name}</div>` : ''}
-                  ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name}</div>`).join('') || ''}
+                  ${item.selectedExtras?.map((e: any) => `<div>&bull; Extra: ${e.name} (+₦${Number(e.price).toLocaleString()})</div>`).join('') || ''}
                 </div>
               </td>
               <td style="padding: 8px 0; border-bottom: 1px solid #ddd; text-align: right; vertical-align: top;">${item.price}</td>
             </tr>
           `).join('')}
           <tr>
-            <td style="padding: 12px 0; font-weight: bold;">Total</td>
-            <td style="padding: 12px 0; font-weight: bold; text-align: right;">${formatMoney(total)}</td>
+            <td style="padding: 12px 0; font-weight: bold;">Total Estimated</td>
+            <td style="padding: 12px 0; font-weight: bold; text-align: right;">${formattedTotal}</td>
           </tr>
          </table>`
       : '<p>No services found in payload.</p>';

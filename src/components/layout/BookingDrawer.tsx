@@ -59,10 +59,10 @@ export default function BookingDrawer() {
                     {/* Render Add-ons */}
                     {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
                       <div className="text-xs text-white/60 mb-2 space-y-0.5">
-                        {item.selectedLength && <div>• {item.selectedLength.name} ({item.selectedLength.price.toLocaleString()})</div>}
-                        {item.selectedDesign && <div>• {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                        {item.selectedLength && <div>• Length: {item.selectedLength.name}</div>}
+                        {item.selectedDesign && <div>• Design: {item.selectedDesign.name}</div>}
                         {item.selectedExtras?.map((ex, i) => (
-                          <div key={i}>• {ex.name} (+₦{ex.price.toLocaleString()})</div>
+                          <div key={i}>• Extra: {ex.name} (+₦{ex.price.toLocaleString()})</div>
                         ))}
                       </div>
                     )}
@@ -104,6 +104,27 @@ export default function BookingDrawer() {
         </div>
         
         <div className="p-6 border-t border-white/10 bg-[#1A1414]">
+          {items.length > 0 && (() => {
+            const total = items.reduce((sum, item) => {
+              const digits = item.price.replace(/[^\d]/g, '');
+              const priceNum = digits ? parseInt(digits, 10) : 0;
+              return sum + (priceNum * (item.quantity || 1));
+            }, 0);
+            const hasPlus = items.some(item => 
+              item.price.includes('+') || 
+              (item.selectedExtras && item.selectedExtras.length > 0) || 
+              item.name.toLowerCase().includes('freestyle') || 
+              item.name.toLowerCase().includes('custom')
+            );
+            return (
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-white/60 text-sm font-medium">Estimated Total</span>
+                <span className="text-xl font-bold text-primary">
+                  ₦{total.toLocaleString()}{hasPlus ? '+' : ''}
+                </span>
+              </div>
+            );
+          })()}
           <Link href="/book/date-time" onClick={() => { startTimer(); setIsOpen(false); }} className={`block w-full py-4 text-center rounded-full font-bold transition-all shadow-lg ${items.length > 0 ? 'bg-primary text-white hover:bg-primary/90' : 'bg-white/10 text-white/40 cursor-not-allowed pointer-events-none'}`}>
             Continue to Date & Time
           </Link>

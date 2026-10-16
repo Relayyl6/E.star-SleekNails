@@ -27,6 +27,7 @@ export default function VendorServicesPage() {
   const [hasLengths, setHasLengths] = useState(false);
   const [lengths, setLengths] = useState<any[]>([]);
   const [hasDesignTiers, setHasDesignTiers] = useState(false);
+  const [designTierRequired, setDesignTierRequired] = useState(false);
   const [designTiers, setDesignTiers] = useState<any[]>([]);
   const [hasExtras, setHasExtras] = useState(false);
   const [extras, setExtras] = useState<any[]>([]);
@@ -70,16 +71,27 @@ export default function VendorServicesPage() {
       setEditingId(service.id);
       setName(service.name || '');
       setCategory(service.category || 'Acrylic Nail Set - Plain');
-      setPrice(service.price || '');
+      setPrice(service.isFreestyle ? (service.basePrice ? String(service.basePrice) : '30000') : (service.price || ''));
       setDuration(service.duration || '');
       setDesc(service.description || service.desc || '');
       setImages((service.images || [service.image || '']).join(', '));
       setHasLengths(service.hasLengths || false);
       setLengths(service.lengths || []);
       setHasDesignTiers(service.hasDesignTiers || false);
+      setDesignTierRequired(service.designTierRequired || false);
       setDesignTiers(service.designTiers || []);
-      setHasExtras(service.hasExtras || false);
-      setExtras(service.extras || []);
+      setHasExtras(service.isFreestyle ? true : (service.hasExtras || false));
+      setExtras(service.extras && service.extras.length > 0 ? service.extras : (service.isFreestyle ? [
+        { name: 'French Tip', price: 2000, hasPlus: true },
+        { name: 'Chrome', price: 3000, hasPlus: true },
+        { name: 'Marble Art', price: 3000, hasPlus: true },
+        { name: '3D Art', price: 3000, hasPlus: true },
+        { name: 'Hand-Drawn Art', price: 3000, hasPlus: true },
+        { name: 'Nail Charms', price: 3000, hasPlus: true },
+        { name: 'Cat Eye', price: 5000, hasPlus: true },
+        { name: 'Aura Design', price: 5000, hasPlus: true },
+        { name: 'Soak-Off', price: 2500, hasPlus: true }
+      ] : []));
     } else {
       setEditingId(null);
       setName('');
@@ -91,6 +103,7 @@ export default function VendorServicesPage() {
       setHasLengths(false);
       setLengths([]);
       setHasDesignTiers(false);
+      setDesignTierRequired(false);
       setDesignTiers([]);
       setHasExtras(false);
       setExtras([]);
@@ -196,13 +209,20 @@ export default function VendorServicesPage() {
       }
 
       const existingService = services.find(s => s.id === id);
+      const isFreestyleService = existingService?.isFreestyle || id === 'freestyle-custom-set';
+
+      if (isFreestyleService) {
+        if (isNaN(basePriceNum) || basePriceNum <= 0) basePriceNum = 30000;
+        finalPrice = `From ₦${basePriceNum.toLocaleString()} Varies`;
+      }
+
       const payload = {
         ...existingService,
         id,
         name,
         category,
         price: finalPrice,
-        basePrice: isNaN(basePriceNum) ? 0 : basePriceNum,
+        basePrice: isNaN(basePriceNum) ? (isFreestyleService ? 30000 : 0) : basePriceNum,
         duration: finalDuration,
         description: desc,
         images: imagesArray,
@@ -210,9 +230,11 @@ export default function VendorServicesPage() {
         hasLengths,
         lengths,
         hasDesignTiers,
+        designTierRequired: hasDesignTiers ? designTierRequired : false,
         designTiers,
-        hasExtras,
-        extras
+        hasExtras: isFreestyleService ? true : hasExtras,
+        extras: isFreestyleService && (!extras || extras.length === 0) ? (existingService?.extras || []) : extras,
+        isFreestyle: isFreestyleService ? true : (existingService?.isFreestyle || false)
       };
 
       const res = await fetch('/api/services', {
@@ -393,15 +415,36 @@ export default function VendorServicesPage() {
                 {/* Design Tiers */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <input type="checkbox" id="hasDesignTiers" checked={hasDesignTiers} onChange={e => setHasDesignTiers(e.target.checked)} className="rounded border-gray-300 text-primary focus:ring-primary" />
-                    <label htmlFor="hasDesignTiers" className="text-sm font-semibold text-gray-700">Requires Design Tier?</label>
+                    <input 
+                      type="checkbox" 
+                      id="hasDesignTiers" 
+                      checked={hasDesignTiers} 
+                      onChange={e => {
+                        setHasDesignTiers(e.target.checked);
+                        if (!e.target.checked) setDesignTierRequired(false);
+                      }} 
+                      className="rounded border-gray-300 text-primary focus:ring-primary" 
+                    />
+                    <label htmlFor="hasDesignTiers" className="text-sm font-semibold text-gray-700">Allow Design Tiers</label>
                   </div>
                   {hasDesignTiers && (
                     <div className="pl-6 space-y-3">
+                      <div className="flex items-center gap-2 pb-1">
+                        <input 
+                          type="checkbox" 
+                          id="designTierRequired" 
+                          checked={designTierRequired} 
+                          onChange={e => setDesignTierRequired(e.target.checked)} 
+                          className="rounded border-gray-300 text-primary focus:ring-primary" 
+                        />
+                        <label htmlFor="designTierRequired" className="text-xs font-medium text-gray-600">
+                          Design Tier is Required (Customer must select one)
+                        </label>
+                      </div>
                       {designTiers.map((opt, i) => (
                         <div key={i} className="flex gap-2 items-center">
                           <input type="text" placeholder="e.g. Basic Design" value={opt.name} onChange={e => { const newOpts = [...designTiers]; newOpts[i].name = e.target.value; setDesignTiers(newOpts); }} className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
-                          <input type="number" placeholder="+₦ Price" value={opt.price} onChange={e => { const newOpts = [...designTiers]; newOpts[i].price = Number(e.target.value); setDesignTiers(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
+                          <input type="number" placeholder="₦ Price" value={opt.price} onChange={e => { const newOpts = [...designTiers]; newOpts[i].price = Number(e.target.value); setDesignTiers(newOpts); }} className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-black" />
                           <label className="flex items-center gap-1 text-xs text-gray-500 whitespace-nowrap">
                             <input type="checkbox" checked={opt.hasPlus || false} onChange={e => { const newOpts = [...designTiers]; newOpts[i].hasPlus = e.target.checked; setDesignTiers(newOpts); }} className="rounded border-gray-300 text-primary focus:ring-primary" />
                             Add "+"

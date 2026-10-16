@@ -104,7 +104,7 @@ export default function ServicesPageClient() {
       if (service && (service.hasLengths || service.hasDesignTiers || service.hasExtras)) {
         setCustomizingService(service);
         setSelectedLength(service.hasLengths && service.lengths?.length > 0 ? service.lengths[0] : null);
-        setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 ? service.designTiers[0] : null);
+        setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 && service.designTierRequired ? service.designTiers[0] : null);
         setSelectedExtras([]);
       }
     }
@@ -114,7 +114,7 @@ export default function ServicesPageClient() {
     if (service.hasLengths || service.hasDesignTiers || service.hasExtras) {
       setCustomizingService(service);
       setSelectedLength(service.hasLengths && service.lengths?.length > 0 ? service.lengths[0] : null);
-      setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 ? service.designTiers[0] : null);
+      setSelectedDesign(service.hasDesignTiers && service.designTiers?.length > 0 && service.designTierRequired ? service.designTiers[0] : null);
       setSelectedExtras([]);
     } else {
       // Direct add
@@ -139,24 +139,42 @@ export default function ServicesPageClient() {
       return;
     }
     
-    if (customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && !selectedDesign) {
+    if (customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && customizingService.designTierRequired && !selectedDesign) {
       toast.error('Please select a design tier');
       return;
     }
 
     // Calculate total
-    let total = selectedLength ? selectedLength.price : (customizingService.basePrice || 0);
-    if (selectedDesign) total += selectedDesign.price;
+    const isFreestyle = customizingService.isFreestyle || customizingService.id === 'freestyle-custom-set';
+    let total = 0;
+    if (isFreestyle) {
+      total = customizingService.basePrice || 30000;
+      if (selectedDesign) total += selectedDesign.price;
+    } else if (customizingService.hasLengths && customizingService.lengths?.length > 0 && selectedLength) {
+      total = selectedLength.price;
+      if (selectedDesign) total += selectedDesign.price;
+    } else if (selectedDesign) {
+      const basePrice = customizingService.basePrice || 0;
+      if (basePrice > 0 && selectedDesign.price < basePrice) {
+        total = basePrice + selectedDesign.price;
+      } else {
+        total = selectedDesign.price;
+      }
+    } else {
+      total = customizingService.basePrice || (customizingService.price ? parseInt(String(customizingService.price).replace(/\D/g, '')) : 0) || 0;
+    }
     selectedExtras.forEach(e => total += e.price);
     
     const formattedPrice = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(total);
+    const hasPlus = isFreestyle || selectedExtras.length > 0 || selectedDesign?.hasPlus;
+    const itemPriceDisplay = hasPlus ? `${formattedPrice}+` : formattedPrice;
     
     addItem({ 
       id: customizingService.id + '-' + Date.now(), 
       serviceId: customizingService.id,
       name: customizingService.name, 
-      price: formattedPrice,
-      basePrice: customizingService.basePrice,
+      price: itemPriceDisplay,
+      basePrice: customizingService.isFreestyle ? (customizingService.basePrice || 30000) : customizingService.basePrice,
       duration: customizingService.duration, 
       image: customizingService.image || customizingService.images?.[0] || '', 
       quantity: 1,
@@ -239,7 +257,9 @@ export default function ServicesPageClient() {
                   <div className="flex-1 flex flex-col min-w-0">
                     <h3 className="font-serif text-xl text-[#1A1414] mb-1">{service.name}</h3>
                     <p className="text-sm font-medium text-gray-500 mb-2">
-                      {(service.hasLengths || service.hasDesignTiers) && !service.price.toLowerCase().includes('from') ? `From ${service.price}` : service.price} · {service.duration}
+                      {service.isFreestyle
+                        ? (service.price?.toLowerCase().includes('varies') ? service.price : `From ₦${(service.basePrice || 30000).toLocaleString()} Varies`)
+                        : ((service.hasLengths || service.hasDesignTiers) && !service.price?.toLowerCase().includes('from') ? `From ${service.price}` : service.price)} · {service.duration}
                     </p>
                     <p className="text-[13px] text-gray-600 leading-relaxed line-clamp-3 mb-2">
                       {service.description || service.desc}
@@ -367,20 +387,37 @@ export default function ServicesPageClient() {
               {customizingService.hasDesignTiers && customizingService.designTiers?.length > 0 && (
                 <div className="space-y-4 pt-2">
                   <h3 className="font-bold text-[#1A1414] flex items-center justify-between">
-                    Design Tier <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">Required</span>
+                    Design Tier <span className="text-xs font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-500">
+                      {customizingService.designTierRequired ? 'Required' : 'Optional'}
+                    </span>
                   </h3>
                   <div className="space-y-2">
-                    {customizingService.designTiers.map((tier: any) => (
-                      <label key={tier.name} onClick={() => setSelectedDesign(tier)} className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${selectedDesign?.name === tier.name ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}>
-                        <div className="flex items-center gap-3">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedDesign?.name === tier.name ? 'border-primary' : 'border-gray-300'}`}>
-                            {selectedDesign?.name === tier.name && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    {customizingService.designTiers.map((tier: any) => {
+                      const isTierSelected = selectedDesign?.name === tier.name;
+                      return (
+                        <label 
+                          key={tier.name} 
+                          onClick={() => {
+                            if (isTierSelected && !customizingService.designTierRequired) {
+                              setSelectedDesign(null);
+                            } else {
+                              setSelectedDesign(tier);
+                            }
+                          }} 
+                          className={`flex items-center justify-between p-4 rounded-xl cursor-pointer border-2 transition-all ${isTierSelected ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-200'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isTierSelected ? 'border-primary' : 'border-gray-300'}`}>
+                              {isTierSelected && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                            </div>
+                            <span className="font-medium text-gray-800">{tier.name}</span>
                           </div>
-                          <span className="font-medium text-gray-800">{tier.name}</span>
-                        </div>
-                        <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}</span>
-                      </label>
-                    ))}
+                          <span className="text-sm font-bold text-gray-600">
+                            {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(tier.price)}{tier.hasPlus ? '+' : ''}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -407,7 +444,7 @@ export default function ServicesPageClient() {
                             </div>
                             <span className="font-medium text-gray-800">{ex.name}</span>
                           </div>
-                          <span className="text-sm font-bold text-gray-600">{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}{ex.hasPlus ? '+' : ''}</span>
+                          <span className="text-sm font-bold text-gray-600">+{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(ex.price)}</span>
                         </label>
                       );
                     })}
@@ -417,6 +454,36 @@ export default function ServicesPageClient() {
             </div>
             
             <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.05)] relative z-10">
+              {(() => {
+                const isFreestyle = customizingService.isFreestyle || customizingService.id === 'freestyle-custom-set';
+                let currentTotal = 0;
+                if (isFreestyle) {
+                  currentTotal = customizingService.basePrice || 30000;
+                  if (selectedDesign) currentTotal += selectedDesign.price;
+                } else if (customizingService.hasLengths && customizingService.lengths?.length > 0 && selectedLength) {
+                  currentTotal = selectedLength.price;
+                  if (selectedDesign) currentTotal += selectedDesign.price;
+                } else if (selectedDesign) {
+                  const basePrice = customizingService.basePrice || 0;
+                  if (basePrice > 0 && selectedDesign.price < basePrice) {
+                    currentTotal = basePrice + selectedDesign.price;
+                  } else {
+                    currentTotal = selectedDesign.price;
+                  }
+                } else {
+                  currentTotal = customizingService.basePrice || (customizingService.price ? parseInt(String(customizingService.price).replace(/\D/g, '')) : 0) || 0;
+                }
+                selectedExtras.forEach(e => currentTotal += e.price);
+                const hasPlusSign = isFreestyle || selectedExtras.length > 0 || selectedDesign?.hasPlus;
+                return (
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm text-gray-500 font-medium">Estimated Total</span>
+                    <span className="text-xl font-bold text-primary">
+                      {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0 }).format(currentTotal)}{hasPlusSign ? '+' : ''}
+                    </span>
+                  </div>
+                );
+              })()}
               <button 
                 onClick={handleAddToCart}
                 className="w-full py-4 bg-[#1A1414] text-white rounded-xl font-bold text-lg hover:bg-black transition-colors shadow-lg"
