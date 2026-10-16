@@ -129,10 +129,10 @@ export default function SuccessPage() {
                       <p className="font-medium text-gray-800 text-sm">{item.name}</p>
                       {(item.selectedLength || item.selectedDesign || (item.selectedExtras && item.selectedExtras.length > 0)) && (
                         <div className="text-xs text-gray-500 my-1 space-y-0.5">
-                          {item.selectedLength && <div>+ {item.selectedLength.name} (+₦{item.selectedLength.price.toLocaleString()})</div>}
-                          {item.selectedDesign && <div>+ {item.selectedDesign.name} (+₦{item.selectedDesign.price.toLocaleString()})</div>}
+                          {item.selectedLength && <div>+ {item.selectedLength.name} (+ ₦{item.selectedLength.price.toLocaleString()})</div>}
+                          {item.selectedDesign && <div>+ {item.selectedDesign.name} (+ ₦{item.selectedDesign.price.toLocaleString()})</div>}
                           {item.selectedExtras?.map((ex: any, i: number) => (
-                            <div key={i}>+ {ex.name} (+₦{ex.price.toLocaleString()})</div>
+                            <div key={i}>+ {ex.name} (+ ₦{ex.price.toLocaleString()})</div>
                           ))}
                         </div>
                       )}
