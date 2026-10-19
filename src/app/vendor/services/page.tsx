@@ -78,18 +78,8 @@ export default function VendorServicesPage() {
       setLengths(service.lengths || []);
       setHasDesignTiers(service.hasDesignTiers || false);
       setDesignTiers(service.designTiers || []);
-      setHasExtras(service.isFreestyle ? true : (service.hasExtras || false));
-      setExtras(service.extras && service.extras.length > 0 ? service.extras : (service.isFreestyle ? [
-        { name: 'French Tip', price: 2000, hasPlus: true },
-        { name: 'Chrome', price: 3000, hasPlus: true },
-        { name: 'Marble Art', price: 3000, hasPlus: true },
-        { name: '3D Art', price: 3000, hasPlus: true },
-        { name: 'Hand-Drawn Art', price: 3000, hasPlus: true },
-        { name: 'Nail Charms', price: 3000, hasPlus: true },
-        { name: 'Cat Eye', price: 5000, hasPlus: true },
-        { name: 'Aura Design', price: 5000, hasPlus: true },
-        { name: 'Soak-Off', price: 2500, hasPlus: true }
-      ] : []));
+      setHasExtras(service.hasExtras || false);
+      setExtras(service.extras || []);
     } else {
       setEditingId(null);
       setName('');
@@ -228,8 +218,8 @@ export default function VendorServicesPage() {
         lengths,
         hasDesignTiers,
         designTiers,
-        hasExtras: isFreestyleService ? true : hasExtras,
-        extras: isFreestyleService && (!extras || extras.length === 0) ? (existingService?.extras || []) : extras,
+        hasExtras,
+        extras,
         isFreestyle: isFreestyleService ? true : (existingService?.isFreestyle || false)
       };
 
