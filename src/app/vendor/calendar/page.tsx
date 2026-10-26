@@ -26,6 +26,34 @@ import {
 const STANDARD_SLOTS = ['09:00 AM', '12:00 PM', '03:00 PM', '05:00 PM'];
 const DAY_ORDER = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+function normalizeTimeString(input: string): string {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return '';
+
+  const match = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i);
+  if (match) {
+    let [_, hStr, mStr, ampmStr] = match;
+    let h = parseInt(hStr, 10);
+    let m = mStr ? parseInt(mStr, 10) : 0;
+    let ampm = ampmStr ? ampmStr.toUpperCase() : null;
+
+    if (!ampm) {
+      if (h >= 1 && h <= 8) ampm = 'PM';
+      else if (h >= 9 && h <= 11) ampm = 'AM';
+      else if (h === 12) ampm = 'PM';
+      else if (h > 12 && h < 24) {
+        h -= 12;
+        ampm = 'PM';
+      } else ampm = 'AM';
+    }
+
+    const formattedH = h.toString().padStart(2, '0');
+    const formattedM = m.toString().padStart(2, '0');
+    return `${formattedH}:${formattedM} ${ampm}`;
+  }
+  return trimmed;
+}
+
 export default function VendorCalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => {
@@ -122,6 +150,33 @@ export default function VendorCalendarPage() {
     return bookingsByDate[selectedDateStr] || [];
   }, [bookingsByDate, selectedDateStr]);
 
+  // Today YYYY-MM-DD string
+  const todayStr = useMemo(() => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const today = new Date();
+    return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  }, []);
+
+  const isPastDay = selectedDateStr < todayStr;
+
+  const isPastSlot = (timeSlot: string) => {
+    if (selectedDateStr < todayStr) return true;
+    if (selectedDateStr > todayStr) return false;
+
+    // It's today - check if the hour has already passed
+    const now = new Date();
+    const match = (timeSlot || '').trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (!match) return false;
+    let h = parseInt(match[1], 10);
+    let min = match[2] ? parseInt(match[2], 10) : 0;
+    let ampm = match[3] ? match[3].toUpperCase() : 'AM';
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    const slotMinutes = h * 60 + min;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    return slotMinutes <= nowMinutes;
+  };
+
   // Determine standard slots for the selected date
   const selectedDaySlots = useMemo(() => {
     const [y, m, d] = selectedDateStr.split('-').map(Number);
@@ -129,31 +184,46 @@ export default function VendorCalendarPage() {
     const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const daySetting = storeHours.find((h: any) => h.day === dayName);
 
-    if (daySetting?.isClosed) return [];
+    const isClosed = daySetting?.isClosed ?? false;
 
-    // All slots on this day (standard slots + any custom slot that was booked/locked)
-    const set = new Set(STANDARD_SLOTS);
+    // If day is closed in store hours, standard slots are closed, but we still display any booked/offline slots
+    const set = isClosed ? new Set<string>() : new Set(STANDARD_SLOTS);
     selectedDayBookings.forEach(b => {
       if (b.time) set.add(b.time);
     });
 
     return Array.from(set).sort((a, b) => {
       const parseTime = (t: string) => {
-        const [timePart, ampm] = t.split(' ');
-        let [h, min] = timePart.split(':').map(Number);
-        if (ampm === 'PM' && h !== 12) h += 12;
-        if (ampm === 'AM' && h === 12) h = 0;
-        return h * 60 + (min || 0);
+        const trimmed = (t || '').trim();
+        const match = trimmed.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+        if (match) {
+          let h = parseInt(match[1], 10);
+          let m = match[2] ? parseInt(match[2], 10) : 0;
+          let ampm = match[3] ? match[3].toUpperCase() : 'AM';
+          if (ampm === 'PM' && h !== 12) h += 12;
+          if (ampm === 'AM' && h === 12) h = 0;
+          return h * 60 + m;
+        }
+        return 9999;
       };
       return parseTime(a) - parseTime(b);
     });
   }, [selectedDateStr, storeHours, selectedDayBookings]);
 
+  const isStoreClosedOnDay = useMemo(() => {
+    const [y, m, d] = selectedDateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    const daySetting = storeHours.find((h: any) => h.day === dayName);
+    return daySetting?.isClosed ?? false;
+  }, [selectedDateStr, storeHours]);
+
   // Open modal for new lock / booking
   const handleOpenModal = (time?: string) => {
     setEditingBooking(null);
+    const modalDate = selectedDateStr < todayStr ? todayStr : selectedDateStr;
     setFormData({
-      date: selectedDateStr,
+      date: modalDate,
       time: time || '12:00 PM',
       customTime: '',
       lockMode: 'single',
@@ -230,16 +300,23 @@ export default function VendorCalendarPage() {
     setIsSubmitting(true);
 
     try {
+      if (formData.date < todayStr) {
+        toast.error('Cannot lock or schedule slots for past dates');
+        setIsSubmitting(false);
+        return;
+      }
+
       let resolvedTime: string | string[] = formData.time;
       if (formData.lockMode === 'all_day') {
         resolvedTime = STANDARD_SLOTS;
       } else if (formData.lockMode === 'custom') {
-        if (!formData.customTime.trim()) {
+        const rawCustom = formData.customTime.trim();
+        if (!rawCustom) {
           toast.error('Please enter a valid custom time');
           setIsSubmitting(false);
           return;
         }
-        resolvedTime = formData.customTime.trim();
+        resolvedTime = normalizeTimeString(rawCustom);
       }
 
       if (editingBooking) {
@@ -457,6 +534,7 @@ export default function VendorCalendarPage() {
               const isToday = todayObj.getFullYear() === year &&
                               todayObj.getMonth() === month &&
                               todayObj.getDate() === dayNum;
+              const isPast = dateStr < todayStr;
 
               return (
                 <div
@@ -467,7 +545,9 @@ export default function VendorCalendarPage() {
                       ? 'border-[#1A1414] bg-[#1A1414] text-white shadow-lg ring-2 ring-[#1A1414]/20'
                       : isToday
                         ? 'border-primary/50 bg-primary/5 hover:border-primary text-[#1A1414]'
-                        : 'border-gray-200 bg-white hover:border-gray-300 text-[#1A1414]'
+                        : isPast
+                          ? 'border-gray-100 bg-gray-50/60 text-gray-400 hover:border-gray-300'
+                          : 'border-gray-200 bg-white hover:border-gray-300 text-[#1A1414]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -537,7 +617,19 @@ export default function VendorCalendarPage() {
           {/* Day Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-gray-100 gap-3">
             <div>
-              <p className="text-xs uppercase tracking-wider font-bold text-gray-400">Day Schedule</p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs uppercase tracking-wider font-bold text-gray-400">Day Schedule</p>
+                {isPastDay && (
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-500">
+                    Past Date
+                  </span>
+                )}
+                {isStoreClosedOnDay && (
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                    Store Closed
+                  </span>
+                )}
+              </div>
               <h3 className="font-serif text-xl font-bold text-[#1A1414]">
                 {(() => {
                   const [y, m, d] = selectedDateStr.split('-').map(Number);
@@ -551,21 +643,30 @@ export default function VendorCalendarPage() {
               </h3>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={handleLockEntireDay}
-                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
-                title="Lock all slots on this day so no one can book online"
-              >
-                <FiLock size={12} />
-                Lock Day
-              </button>
-              <button
-                onClick={() => handleOpenModal()}
-                className="px-3.5 py-1.5 bg-[#1A1414] hover:bg-black text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
-              >
-                <FiPlus size={14} />
-                Lock Slot
-              </button>
+              {isPastDay ? (
+                <span className="px-3.5 py-1.5 bg-gray-100 text-gray-500 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                  <FiClock size={13} />
+                  Past Date (Read Only)
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={handleLockEntireDay}
+                    className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                    title="Lock all slots on this day so no one can book online"
+                  >
+                    <FiLock size={12} />
+                    Lock Day
+                  </button>
+                  <button
+                    onClick={() => handleOpenModal()}
+                    className="px-3.5 py-1.5 bg-[#1A1414] hover:bg-black text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1"
+                  >
+                    <FiPlus size={14} />
+                    Lock Slot
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -588,9 +689,30 @@ export default function VendorCalendarPage() {
 
           {/* Time Slot List for the Selected Day */}
           <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+            {selectedDaySlots.length === 0 && (
+              <div className="text-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-500">
+                <FiCalendar size={28} className="mx-auto text-gray-300 mb-2" />
+                <p className="text-sm font-semibold text-gray-700">No active slots for this day</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {isStoreClosedOnDay 
+                    ? 'The studio is closed on this day according to your operating hours.' 
+                    : 'No appointments or slots have been scheduled.'}
+                </p>
+                {!isPastDay && (
+                  <button
+                    onClick={() => handleOpenModal()}
+                    className="mt-4 px-4 py-2 bg-[#1A1414] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors"
+                  >
+                    Add Offline Booking Anyway
+                  </button>
+                )}
+              </div>
+            )}
+
             {selectedDaySlots.map(timeSlot => {
               // Find if this slot has a booking
               const slotBooking = selectedDayBookings.find(b => b.time === timeSlot);
+              const isSlotInPast = isPastSlot(timeSlot);
 
               // Apply active filter if there's a booking
               if (slotBooking) {
@@ -606,7 +728,9 @@ export default function VendorCalendarPage() {
                   key={timeSlot}
                   className={`p-4 rounded-2xl border transition-all ${
                     !slotBooking
-                      ? 'border-gray-200 bg-white hover:border-gray-300'
+                      ? isSlotInPast
+                        ? 'border-gray-100 bg-gray-50/50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
                       : slotBooking.isBlocked
                         ? 'border-amber-200 bg-amber-50/40'
                         : slotBooking.isOffline
@@ -623,20 +747,26 @@ export default function VendorCalendarPage() {
 
                       {/* Status Badges */}
                       {!slotBooking ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
-                          Open Online
-                        </span>
+                        isSlotInPast ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500">
+                            Past / Unbooked
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700">
+                            Open Online
+                          </span>
+                        )
                       ) : slotBooking.isBlocked ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
-                          <FiLock size={10} /> Locked Slot
+                          <FiLock size={10} /> Locked Slot {isSlotInPast ? '(Past)' : ''}
                         </span>
                       ) : slotBooking.isOffline ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                          <FiUser size={10} /> Offline Client
+                          <FiUser size={10} /> Offline Client {isSlotInPast ? '(Past)' : ''}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 flex items-center gap-1">
-                          <FiGlobe size={10} /> Website Booking
+                          <FiGlobe size={10} /> Website Booking {isSlotInPast ? '(Past)' : ''}
                         </span>
                       )}
                     </div>
@@ -644,13 +774,19 @@ export default function VendorCalendarPage() {
                     {/* Action buttons */}
                     <div className="flex items-center gap-1">
                       {!slotBooking ? (
-                        <button
-                          onClick={() => handleOpenModal(timeSlot)}
-                          className="px-2.5 py-1 text-xs font-bold text-gray-700 hover:text-black bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
-                          title="Lock this slot for off-site booking"
-                        >
-                          <FiLock size={12} /> Lock
-                        </button>
+                        !isSlotInPast ? (
+                          <button
+                            onClick={() => handleOpenModal(timeSlot)}
+                            className="px-2.5 py-1 text-xs font-bold text-gray-700 hover:text-black bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center gap-1"
+                            title="Lock this slot for off-site booking"
+                          >
+                            <FiLock size={12} /> Lock
+                          </button>
+                        ) : (
+                          <span className="text-[11px] text-gray-400 font-medium italic px-1">
+                            Passed
+                          </span>
+                        )
                       ) : (
                         <>
                           <button
@@ -789,6 +925,7 @@ export default function VendorCalendarPage() {
                   <input
                     type="date"
                     required
+                    min={todayStr}
                     value={formData.date}
                     onChange={e => setFormData({ ...formData, date: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black bg-white"

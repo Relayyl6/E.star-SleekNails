@@ -125,6 +125,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Date and time are required' }, { status: 400 });
     }
 
+    // Disallow creating bookings or locking slots on past dates
+    const today = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+    if (date < todayStr) {
+      return NextResponse.json({ error: 'Cannot lock or create bookings for past dates.' }, { status: 400 });
+    }
+
     const timesToLock: string[] = Array.isArray(time) ? time : [time];
     if (timesToLock.length === 0) {
       return NextResponse.json({ error: 'At least one time slot is required' }, { status: 400 });
@@ -289,8 +298,17 @@ export async function PATCH(request: Request) {
     if (targetDate && targetTime) {
       const isMovingDateTime = targetDate !== currentData.date || targetTime !== currentData.time;
       
-      // If moving slot, check if destination is taken
+      // If moving slot, check if destination is in past or taken
       if (isMovingDateTime) {
+        if (date) {
+          const today = new Date();
+          const pad = (n: number) => n.toString().padStart(2, '0');
+          const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+          if (targetDate < todayStr) {
+            return NextResponse.json({ error: 'Cannot reschedule booking to a past date.' }, { status: 400 });
+          }
+        }
+
         const conflictSnap = await db.collection('bookings')
           .where('date', '==', targetDate)
           .where('time', '==', targetTime)

@@ -40,6 +40,11 @@ export default function VendorDashboardPage() {
     notes: ''
   });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const todayStr = (() => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const today = new Date();
+    return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  })();
 
   const handleOpenEditModal = (b: any) => {
     setEditFormData({
@@ -788,6 +793,7 @@ export default function VendorDashboardPage() {
                   <input 
                     type="date"
                     required
+                    min={todayStr}
                     value={editFormData.date}
                     onChange={e => setEditFormData({ ...editFormData, date: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
