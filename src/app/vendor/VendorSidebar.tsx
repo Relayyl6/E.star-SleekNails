@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
-import { FiMenu, FiHome, FiList, FiSettings, FiLogOut, FiX, FiImage } from 'react-icons/fi';
+import { FiMenu, FiHome, FiCalendar, FiList, FiSettings, FiLogOut, FiX, FiImage } from 'react-icons/fi';
 
 export default function VendorSidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +13,7 @@ export default function VendorSidebar() {
 
   const links = [
     { href: '/vendor/dashboard', label: 'Dashboard', icon: FiHome },
+    { href: '/vendor/calendar', label: 'Calendar', icon: FiCalendar },
     { href: '/vendor/services', label: 'Services', icon: FiList },
     { href: '/vendor/gallery', label: 'Gallery', icon: FiImage },
     { href: '/vendor/settings', label: 'Settings', icon: FiSettings },

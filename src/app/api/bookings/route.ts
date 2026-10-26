@@ -219,7 +219,7 @@ export async function POST(request: Request) {
 
     const isActuallyBooked = existing.docs.some(doc => {
        const status = doc.data().status;
-       return status === 'CONFIRMED' || status === 'COMPLETED';
+       return status === 'CONFIRMED' || status === 'COMPLETED' || status === 'BLOCKED' || status === 'PENDING' || status === 'PENDING_VERIFICATION';
     });
 
     if (isActuallyBooked) {
