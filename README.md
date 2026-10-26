@@ -8,6 +8,7 @@ This platform features an interactive service menu, automated PDF invoicing and 
 ## Features
 
 - **Guest-Session Cart Synchronization:** Bookings made by unauthenticated guests are automatically persisted in a local session cart. If the user later signs up, their bookings seamlessly synchronize and permanently attach to their authenticated account.
+- **Studio Calendar & Schedule Management:** An interactive admin calendar view for locking out slots, logging offline/walk-in appointments, blocking studio hours, and rescheduling bookings with real-time slot conflict prevention.
 - **Automated Invoicing & Receipts:** Client-side PDF generation automatically creates downloadable "PAYMENT REQUEST" invoices (for pending bookings) and "OFFICIAL RECEIPTS" (for confirmed, paid bookings).
 - **Secure Role-Based Access Control (RBAC):** Next.js App Router API endpoints are secured using `firebase-admin` and HTTP-only session cookies. Sensitive endpoints like full database fetching, updating booking statuses, modifying waitlists, and altering storefront settings are strictly locked to Admin accounts. 
 - **Timezone-Safe Dates:** All appointments are rigorously parsed and stored without UTC shifts, ensuring bookings created in West Africa Time (WAT) remain perfectly accurate across all international clients and server runtimes.
@@ -44,6 +45,9 @@ Here is a glimpse of the E.star SleekNails platform in action:
 
 ### Admin Dashboard
 ![Admin Dashboard](./screenshots/admin-dashboard.png)
+
+### Studio Calendar & Schedule Management
+![Studio Calendar & Schedule Management](./screenshots/admin-calendar.png)
 
 ### Booking Details Management
 ![Booking Details Management](./screenshots/admin-booking-details.png)
