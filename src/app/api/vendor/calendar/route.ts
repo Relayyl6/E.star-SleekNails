@@ -146,10 +146,10 @@ export async function POST(request: Request) {
       });
 
       if (activeExisting) {
-        // If already booked, skip or error
         if (timesToLock.length === 1) {
+          const clientName = `${activeExisting.data().firstName || ''} ${activeExisting.data().lastName || ''}`.trim() || activeExisting.data().ref || 'another booking';
           return NextResponse.json({
-            error: `Slot ${slotTime} on ${date} is already occupied by ${activeExisting.data().firstName || 'another booking'}.`
+            error: `Conflict: Slot ${slotTime} on ${date} is already occupied by ${clientName}. Please choose an open slot.`
           }, { status: 409 });
         }
         continue;
@@ -243,7 +243,7 @@ export async function DELETE(request: Request) {
   }
 }
 
-// PATCH: Update details of an existing offline booking or locked slot
+// PATCH: Update details of an existing booking with strict conflict detection
 export async function PATCH(request: Request) {
   try {
     const admin = await verifyAdmin();
@@ -252,7 +252,21 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, ...data } = body;
+    const {
+      id,
+      date,
+      time,
+      firstName,
+      lastName,
+      email,
+      phone,
+      instagram,
+      serviceName,
+      total,
+      notes,
+      isBlocked,
+      status
+    } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing booking ID' }, { status: 400 });
@@ -266,12 +280,80 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    await docRef.update({
-      ...data,
-      updatedAt: new Date().toISOString()
-    });
+    const currentData = snap.data() || {};
+    const targetDate = date ? date.trim() : currentData.date;
+    const targetTime = time ? time.trim() : currentData.time;
 
-    return NextResponse.json({ success: true, message: 'Booking updated successfully.' }, { status: 200 });
+    // CONFLICT CHECK:
+    // If date or time is set or changing, verify no other active booking occupies that slot
+    if (targetDate && targetTime) {
+      const isMovingDateTime = targetDate !== currentData.date || targetTime !== currentData.time;
+      
+      // If moving slot, check if destination is taken
+      if (isMovingDateTime) {
+        const conflictSnap = await db.collection('bookings')
+          .where('date', '==', targetDate)
+          .where('time', '==', targetTime)
+          .get();
+
+        const conflictingDoc = conflictSnap.docs.find(doc => {
+          if (doc.id === id) return false;
+          const s = doc.data().status;
+          return s !== 'CANCELLED';
+        });
+
+        if (conflictingDoc) {
+          const cData = conflictingDoc.data();
+          const clientName = `${cData.firstName || ''} ${cData.lastName || ''}`.trim() || cData.ref || 'another client';
+          return NextResponse.json({
+            error: `Conflict: Slot ${targetTime} on ${targetDate} is already booked by ${clientName}. Please choose an open slot.`
+          }, { status: 409 });
+        }
+      }
+    }
+
+    const formatPrice = (val: any) => {
+      if (!val) return '₦0';
+      const num = typeof val === 'number' ? val : parseInt(String(val).replace(/\D/g, ''), 10) || 0;
+      return `₦${num.toLocaleString()}`;
+    };
+
+    const updatePayload: any = {
+      updatedAt: new Date().toISOString()
+    };
+
+    if (date !== undefined) updatePayload.date = targetDate;
+    if (time !== undefined) updatePayload.time = targetTime;
+    if (firstName !== undefined) updatePayload.firstName = firstName.trim();
+    if (lastName !== undefined) updatePayload.lastName = lastName.trim();
+    if (email !== undefined) updatePayload.email = email.trim();
+    if (phone !== undefined) updatePayload.phone = phone.trim();
+    if (instagram !== undefined) updatePayload.instagram = instagram.trim().replace(/^@/, '');
+    if (notes !== undefined) updatePayload.notes = notes.trim();
+    if (status !== undefined) updatePayload.status = status;
+    if (isBlocked !== undefined) updatePayload.isBlocked = isBlocked;
+
+    if (serviceName !== undefined) {
+      updatePayload.serviceName = serviceName.trim();
+      const currentPrice = total !== undefined ? formatPrice(total) : (currentData.total || '₦0');
+      updatePayload.items = [{
+        name: serviceName.trim() || (isBlocked ? 'Blocked Time Slot' : 'Appointment'),
+        price: currentPrice,
+        quantity: 1
+      }];
+    }
+
+    if (total !== undefined) {
+      updatePayload.total = formatPrice(total);
+    }
+
+    await docRef.update(updatePayload);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Booking updated successfully.',
+      updated: { id, date: targetDate, time: targetTime }
+    }, { status: 200 });
   } catch (error: any) {
     console.error('PATCH /api/vendor/calendar Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

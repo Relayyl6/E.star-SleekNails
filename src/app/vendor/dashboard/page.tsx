@@ -26,6 +26,64 @@ export default function VendorDashboardPage() {
   });
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Edit / Reschedule Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    id: '',
+    date: '',
+    time: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    instagram: '',
+    notes: ''
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleOpenEditModal = (b: any) => {
+    setEditFormData({
+      id: b.id,
+      date: b.date || '',
+      time: b.time || '12:00 PM',
+      firstName: b.firstName || '',
+      lastName: b.lastName || '',
+      phone: b.phone || '',
+      email: b.email || '',
+      instagram: b.instagram || '',
+      notes: b.notes || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch('/api/vendor/calendar', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success('Booking updated successfully');
+        setShowEditModal(false);
+        if (selectedBooking && selectedBooking.id === editFormData.id) {
+          setSelectedBooking((prev: any) => ({ ...prev, ...editFormData }));
+        }
+        fetchBookings();
+      } else {
+        toast.error(data.error || 'Failed to update booking');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Network error updating booking');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const fetchBookings = async () => {
     try {
       const [bookingsRes, waitlistRes] = await Promise.all([
@@ -706,6 +764,139 @@ export default function VendorDashboardPage() {
         </div>
       )}
 
+      {/* Edit / Reschedule Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95">
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div>
+                <h3 className="font-serif text-xl font-bold text-[#1A1414]">Edit / Reschedule Booking</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Update details or move to a new date & time slot.</p>
+              </div>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="p-2 text-gray-400 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">Date *</label>
+                  <input 
+                    type="date"
+                    required
+                    value={editFormData.date}
+                    onChange={e => setEditFormData({ ...editFormData, date: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">Time Slot *</label>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="e.g. 12:00 PM"
+                    value={editFormData.time}
+                    onChange={e => setEditFormData({ ...editFormData, time: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-[11px] text-amber-800">
+                💡 <strong>Conflict Detection:</strong> If you change the date or time, the system will verify the new slot is not already booked by another customer.
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">First Name</label>
+                  <input 
+                    type="text"
+                    value={editFormData.firstName}
+                    onChange={e => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Last Name</label>
+                  <input 
+                    type="text"
+                    value={editFormData.lastName}
+                    onChange={e => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Phone</label>
+                  <input 
+                    type="tel"
+                    value={editFormData.phone}
+                    onChange={e => setEditFormData({ ...editFormData, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Instagram</label>
+                  <input 
+                    type="text"
+                    value={editFormData.instagram}
+                    onChange={e => setEditFormData({ ...editFormData, instagram: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Email</label>
+                <input 
+                  type="email"
+                  value={editFormData.email}
+                  onChange={e => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Notes</label>
+                <textarea 
+                  rows={2}
+                  value={editFormData.notes}
+                  onChange={e => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEdit}
+                  className="flex-1 py-3 text-sm font-bold text-white bg-[#1A1414] hover:bg-black rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSavingEdit ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Booking Details Drawer */}
       <div className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${selectedBooking ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setSelectedBooking(null)} />
       
@@ -820,6 +1011,16 @@ export default function VendorDashboardPage() {
             
             {/* Actions Footer */}
             <div className="p-6 border-t border-gray-100 bg-white space-y-3">
+              {selectedBooking.status?.toUpperCase() !== 'CANCELLED' && selectedBooking.status?.toUpperCase() !== 'WAITLIST' && (
+                <button 
+                  onClick={() => handleOpenEditModal(selectedBooking)}
+                  className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-900 border border-gray-200 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  Edit / Reschedule Booking
+                </button>
+              )}
+
               {(selectedBooking.status?.toUpperCase() === 'PENDING' || selectedBooking.status?.toUpperCase() === 'PENDING_VERIFICATION') && (
                 <button 
                   onClick={() => { updateBookingStatus(selectedBooking.id, 'CONFIRMED'); setSelectedBooking(null); }}

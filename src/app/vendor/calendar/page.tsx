@@ -173,11 +173,12 @@ export default function VendorCalendarPage() {
   // Open modal to edit existing offline booking / block
   const handleEditBooking = (b: any) => {
     setEditingBooking(b);
+    const isStandard = STANDARD_SLOTS.includes(b.time);
     setFormData({
-      date: b.date,
-      time: b.time,
-      customTime: STANDARD_SLOTS.includes(b.time) ? '' : b.time,
-      lockMode: 'single',
+      date: b.date || selectedDateStr,
+      time: isStandard ? b.time : '12:00 PM',
+      customTime: isStandard ? '' : (b.time || ''),
+      lockMode: isStandard ? 'single' : 'custom',
       bookingType: b.isBlocked ? 'block' : 'offline',
       firstName: b.firstName === 'Blocked' || b.firstName === 'Walk-in' ? '' : b.firstName || '',
       lastName: b.lastName === 'Slot' || b.lastName === 'Client' ? '' : b.lastName || '',
@@ -248,6 +249,8 @@ export default function VendorCalendarPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: editingBooking.id,
+            date: formData.date,
+            time: resolvedTime,
             firstName: formData.firstName.trim() || (formData.bookingType === 'block' ? 'Blocked' : 'Walk-in'),
             lastName: formData.lastName.trim() || (formData.bookingType === 'block' ? 'Slot' : 'Client'),
             email: formData.email.trim(),
@@ -255,18 +258,18 @@ export default function VendorCalendarPage() {
             instagram: formData.instagram.trim().replace(/^@/, ''),
             serviceName: formData.serviceName.trim(),
             notes: formData.notes.trim(),
-            total: formData.total ? `₦${Number(formData.total).toLocaleString()}` : '₦0',
+            total: formData.total ? Number(formData.total) : 0,
             isBlocked: formData.bookingType === 'block'
           })
         });
 
         if (res.ok) {
-          toast.success('Booking details updated successfully');
+          toast.success('Booking updated successfully');
           setIsModalOpen(false);
           fetchData();
         } else {
           const err = await res.json();
-          toast.error(err.error || 'Failed to update');
+          toast.error(err.error || 'Failed to update booking');
         }
       } else {
         // POST (Create)
@@ -650,15 +653,13 @@ export default function VendorCalendarPage() {
                         </button>
                       ) : (
                         <>
-                          {slotBooking.isOffline && (
-                            <button
-                              onClick={() => handleEditBooking(slotBooking)}
-                              className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
-                              title="Edit details"
-                            >
-                              <FiEdit2 size={13} />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleEditBooking(slotBooking)}
+                            className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-white rounded-lg transition-colors"
+                            title="Edit / Reschedule booking"
+                          >
+                            <FiEdit2 size={13} />
+                          </button>
                           <button
                             onClick={() => handleUnlockSlot(slotBooking.id, timeSlot)}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -789,9 +790,8 @@ export default function VendorCalendarPage() {
                     type="date"
                     required
                     value={formData.date}
-                    disabled={!!editingBooking}
                     onChange={e => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black bg-white"
                   />
                 </div>
 
@@ -799,43 +799,36 @@ export default function VendorCalendarPage() {
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Time Slot *
                   </label>
-                  {editingBooking ? (
-                    <input
-                      type="text"
-                      disabled
-                      value={formData.time}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm"
-                    />
-                  ) : (
-                    <select
-                      value={formData.lockMode === 'all_day' ? 'all_day' : formData.lockMode === 'custom' ? 'custom' : formData.time}
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val === 'all_day') {
-                          setFormData({ ...formData, lockMode: 'all_day' });
-                        } else if (val === 'custom') {
-                          setFormData({ ...formData, lockMode: 'custom' });
-                        } else {
-                          setFormData({ ...formData, lockMode: 'single', time: val });
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black bg-white"
-                    >
-                      <optgroup label="Standard Slots">
-                        {STANDARD_SLOTS.map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Bulk / Custom">
+                  <select
+                    value={formData.lockMode === 'all_day' ? 'all_day' : formData.lockMode === 'custom' ? 'custom' : formData.time}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'all_day') {
+                        setFormData({ ...formData, lockMode: 'all_day' });
+                      } else if (val === 'custom') {
+                        setFormData({ ...formData, lockMode: 'custom' });
+                      } else {
+                        setFormData({ ...formData, lockMode: 'single', time: val });
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black bg-white"
+                  >
+                    <optgroup label="Standard Slots">
+                      {STANDARD_SLOTS.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Custom / Bulk">
+                      {!editingBooking && (
                         <option value="all_day">Lock Entire Day (All 4 Slots)</option>
-                        <option value="custom">Custom Time...</option>
-                      </optgroup>
-                    </select>
-                  )}
+                      )}
+                      <option value="custom">Custom Time...</option>
+                    </optgroup>
+                  </select>
                 </div>
               </div>
 
-              {formData.lockMode === 'custom' && !editingBooking && (
+              {formData.lockMode === 'custom' && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1.5">
                     Custom Time (e.g. 10:30 AM, 02:00 PM) *
@@ -849,6 +842,12 @@ export default function VendorCalendarPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-black"
                   />
                 </div>
+              )}
+
+              {editingBooking && (
+                <p className="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+                  💡 <strong>Rescheduling:</strong> Changing the date or time will automatically check the calendar to ensure the target slot is not already booked.
+                </p>
               )}
 
               {/* Optional Client Details Section */}
