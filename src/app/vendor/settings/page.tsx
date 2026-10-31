@@ -16,6 +16,7 @@ export default function VendorSettingsPage() {
     bio: '',
     heroImage: '',
     depositAmount: 5000,
+    aiReceiptReviewEnabled: true,
     adminEmail: 'peteratambaesther@gmail.com',
     bankDetails: 'Moniepoint, 7049022919, E.star SleekNails Luxury studio/ E.star SleekNails',
     hours: [
@@ -224,6 +225,28 @@ export default function VendorSettingsPage() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#1A1414]" 
                 />
               </div>
+            </div>
+
+            {/* AI Receipt Verification Toggle */}
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm text-gray-900">AI Deposit Receipt Auto-Review</span>
+                  <span className="px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-800 rounded-full">Automated</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Automatically verify transfer receipts using AI to confirm genuine deposits and instantly secure customer appointments.
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input 
+                  type="checkbox" 
+                  checked={settings.aiReceiptReviewEnabled ?? true}
+                  onChange={e => setSettings({ ...settings, aiReceiptReviewEnabled: e.target.checked })}
+                  className="sr-only peer" 
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1A1414]"></div>
+              </label>
             </div>
 
             <div>

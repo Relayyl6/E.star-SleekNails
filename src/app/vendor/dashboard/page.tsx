@@ -144,6 +144,9 @@ export default function VendorDashboardPage() {
         return;
       }
       
+      const isConfirming = newStatus === 'CONFIRMED';
+      const toastId = toast.loading(isConfirming ? 'Confirming payment & sending official receipt...' : 'Updating booking status...');
+
       const res = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -151,11 +154,14 @@ export default function VendorDashboardPage() {
       });
       
       if (!res.ok) {
-        toast.error('Failed to update booking status');
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.error || 'Failed to update booking status', { id: toastId });
         return;
       }
       
-      toast.success(`Booking marked as ${newStatus}`);
+      toast.success(isConfirming 
+        ? 'Booking confirmed! Official receipt and calendar invite sent to customer and studio.' 
+        : `Booking marked as ${newStatus}`, { id: toastId });
       fetchBookings(); // Refresh the list
     } catch (error) {
       console.error(error);
@@ -400,28 +406,56 @@ export default function VendorDashboardPage() {
       return;
     }
 
-    // Generate CSV
-    const headers = ['Booking ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Instagram', 'Date', 'Time', 'Services', 'Total Price', 'Status', 'Booked At'];
-    
-    const rows = filtered.map(b => [
-      b.id,
-      b.firstName || '',
-      b.lastName || '',
-      b.email || '',
-      b.phone ? `="${b.phone}"` : '',
-      b.instagram ? (b.instagram.startsWith('@') ? b.instagram : `@${b.instagram}`) : '',
-      b.date || '',
-      b.time || '',
-      `"${b.items?.map((i: any) => i.name).join(', ') || 'Custom'}"`, // Quotes to handle commas in services list
-      `"${b.total || '0'}"`,
-      b.status || 'PENDING',
-      b.createdAt ? new Date(b.createdAt).toLocaleString() : ''
-    ]);
+    // Generate CSV with UTF-8 BOM (\uFEFF) to guarantee Excel, Google Sheets & Numbers display symbols correctly
+    const headers = [
+      'Booking ID',
+      'First Name',
+      'Last Name',
+      'Email',
+      'Phone',
+      'Instagram',
+      'Date',
+      'Time',
+      'Services',
+      'Currency',
+      'Amount',
+      'Total Price',
+      'Status',
+      'Booked At'
+    ];
 
-    const csvContent = [
-      headers.join(','),
+    const escapeCsv = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const rows = filtered.map(b => {
+      const rawPrice = parseInt(String(b.total || '0').replace(/\D/g, ''), 10) || 0;
+      const formattedTotal = formatBookingTotal(b);
+
+      return [
+        escapeCsv(b.ref || b.id),
+        escapeCsv(b.firstName || ''),
+        escapeCsv(b.lastName || ''),
+        escapeCsv(b.email || ''),
+        escapeCsv(b.phone || ''),
+        escapeCsv(b.instagram ? (b.instagram.startsWith('@') ? b.instagram : `@${b.instagram}`) : ''),
+        escapeCsv(b.date || ''),
+        escapeCsv(b.time || ''),
+        escapeCsv(b.items?.map((i: any) => i.name).join(', ') || b.serviceName || 'Custom Service'),
+        escapeCsv('NGN'),
+        rawPrice,
+        escapeCsv(formattedTotal),
+        escapeCsv(b.status || 'PENDING'),
+        escapeCsv(b.createdAt ? new Date(b.createdAt).toLocaleString() : '')
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [
+      headers.map(h => escapeCsv(h)).join(','),
       ...rows.map(row => row.join(','))
-    ].join('\n');
+    ].join('\r\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -984,20 +1018,83 @@ export default function VendorDashboardPage() {
                 </div>
               </div>
 
-              {/* Inspiration Photo */}
-              {selectedBooking.photoUrl && (
+              {/* Inspiration Photo or Link */}
+              {(selectedBooking.photoUrl || selectedBooking.inspirationLink) && (
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Inspiration Photo</p>
-                  <div className="rounded-xl overflow-hidden border border-gray-200">
-                    <img src={selectedBooking.photoUrl} alt="Inspiration" className="w-full object-cover" />
-                  </div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Nail Inspiration</p>
+                  {selectedBooking.photoUrl && (
+                    <div className="rounded-xl overflow-hidden border border-gray-200 mb-2">
+                      <img src={selectedBooking.photoUrl} alt="Inspiration" className="w-full object-cover" />
+                    </div>
+                  )}
+                  {selectedBooking.inspirationLink && (
+                    <a 
+                      href={selectedBooking.inspirationLink.startsWith('http') ? selectedBooking.inspirationLink : `https://${selectedBooking.inspirationLink}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1.5 p-3 bg-blue-50/50 rounded-xl border border-blue-100"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      Open Inspiration Link: {selectedBooking.inspirationLink}
+                    </a>
+                  )}
                 </div>
               )}
 
-              {/* Payment Receipt */}
+              {/* Payment Receipt & AI Verification Report */}
               {selectedBooking.receiptUrl && (
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Payment Receipt</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Payment Receipt</p>
+                    {selectedBooking.aiVerification ? (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        selectedBooking.aiVerification.status === 'VERIFIED'
+                          ? 'bg-green-100 text-green-800'
+                          : selectedBooking.aiVerification.status === 'FAILED'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {selectedBooking.aiVerification.status === 'VERIFIED' ? '✓ AI Auto-Verified' : selectedBooking.aiVerification.status === 'FAILED' ? '⚠ Manual Review Required' : 'AI Review Skipped'}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/* AI Status Card */}
+                  {selectedBooking.aiVerification && (
+                    <div className="mb-3 p-3.5 rounded-xl border text-xs space-y-1.5 bg-gray-50 border-gray-200">
+                      <div className="flex items-center justify-between font-bold text-gray-800">
+                        <span>AI Review Assessment:</span>
+                        <span className="font-mono">{selectedBooking.aiVerification.status}</span>
+                      </div>
+                      <p className="text-gray-600 text-[11px] leading-relaxed">
+                        {selectedBooking.aiVerification.reason}
+                      </p>
+                      {selectedBooking.aiVerification.detectedAmount && (
+                        <p className="text-gray-700 font-semibold text-[11px]">
+                          Detected Deposit: ₦{Number(selectedBooking.aiVerification.detectedAmount).toLocaleString()}
+                        </p>
+                      )}
+                      
+                      {/* Receipt Email Dispatch Status */}
+                      <div className="pt-2 mt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
+                        <span className="text-gray-500 font-medium">Receipt Email Status:</span>
+                        {selectedBooking.receiptEmailSent ? (
+                          <span className="text-green-700 font-bold flex items-center gap-1">
+                            ✓ Sent to client ({selectedBooking.email})
+                          </span>
+                        ) : selectedBooking.status?.toUpperCase() === 'CONFIRMED' ? (
+                          <span className="text-amber-700 font-medium">
+                            {selectedBooking.receiptEmailStatus || 'Pending send'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic">
+                            Dispatches when owner approves
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="rounded-xl overflow-hidden border border-gray-200">
                     <img src={selectedBooking.receiptUrl} alt="Payment Receipt" className="w-full object-cover" />
                   </div>
@@ -1010,6 +1107,26 @@ export default function VendorDashboardPage() {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notes</p>
                   <div className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-100/50">
                     <p className="text-sm text-gray-700 italic">"{selectedBooking.notes}"</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Audit / Edit History */}
+              {selectedBooking.editHistory && selectedBooking.editHistory.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Audit History ({selectedBooking.editHistory.length})</p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {selectedBooking.editHistory.map((item: any, i: number) => (
+                      <div key={i} className="text-[11px] p-2.5 bg-gray-50 border border-gray-100 rounded-xl text-gray-600">
+                        <div className="flex justify-between items-center font-bold text-gray-800 mb-0.5">
+                          <span>{item.action || 'Edited'} by {item.role || 'User'}</span>
+                          <span className="text-[10px] text-gray-400 font-normal">
+                            {new Date(item.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                        {item.editedBy && <p className="text-gray-500 text-[10px]">{item.editedBy}</p>}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
