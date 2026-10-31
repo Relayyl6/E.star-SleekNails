@@ -943,6 +943,51 @@ export async function PATCH(request: Request) {
       });
     }
 
+    // Send Reschedule Email (admin changed date or time)
+    const dateChanged = changes['date'] !== undefined;
+    const timeChanged = changes['time'] !== undefined;
+    if (isAdmin && (dateChanged || timeChanged) && currentData.email) {
+      const newDate = updatePayload.date || currentData.date;
+      const newTime = updatePayload.time || currentData.time;
+      const oldDate = currentData.date;
+      const oldTime = currentData.time;
+      const formattedOld = `${new Date(oldDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} at ${oldTime}`;
+      const formattedNew = `${new Date(newDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} at ${newTime}`;
+      try {
+        await sendEmail({
+          to: [currentData.email],
+          subject: `Your Appointment Has Been Rescheduled — ${currentData.ref || id}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
+              <h1 style="color: #1A1414; font-size: 22px; margin-top: 0;">Appointment Rescheduled</h1>
+              <p>Hi <strong>${currentData.firstName || 'there'}</strong>,</p>
+              <p>Your appointment at <strong>E.star SleekNails</strong> has been rescheduled by the studio.</p>
+
+              <div style="background-color: #f7fafc; border-left: 4px solid #1A1414; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #718096; text-transform: uppercase; letter-spacing: 0.05em;">Previous Time</p>
+                <p style="margin: 0; font-size: 15px; text-decoration: line-through; color: #999;">${formattedOld}</p>
+              </div>
+
+              <div style="background-color: #ebf8ff; border-left: 4px solid #2b6cb0; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #2b6cb0; text-transform: uppercase; letter-spacing: 0.05em;">New Time</p>
+                <p style="margin: 0; font-size: 18px; font-weight: bold; color: #1A1414;">${formattedNew}</p>
+              </div>
+
+              <p style="font-size: 14px; color: #4a5568;">Your booking reference is <strong>${currentData.ref || id}</strong>. All other details remain the same.</p>
+              <p style="font-size: 14px; color: #4a5568;">If this time does not work for you, please contact us as soon as possible so we can find an alternative.</p>
+
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #a0aec0; text-align: center;">
+                <p style="margin: 0;">E.star SleekNails &bull; Abuja, Gwarimpa</p>
+              </div>
+            </div>
+          `
+        });
+        console.log('[RESCHEDULE] Reschedule notification sent to', currentData.email);
+      } catch (rescheduleEmailErr) {
+        console.error('[RESCHEDULE] Failed to send reschedule email:', rescheduleEmailErr);
+      }
+    }
+
     // Send Cancellation Emails
     if (targetStatus === 'CANCELLED' && currentData.email) {
       try {
