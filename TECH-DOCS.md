@@ -170,7 +170,10 @@ sequenceDiagram
 #### Time Normalization Algorithm:
 Off-site clients and vendor staff frequently input unstructured time formats. The platform runs a deterministic normalization regular expression:
 
-$$\text{Regex: } \mathtt{\hat{\phantom{x}}(\backslash d\{1,2\})(?::(\backslash d\{2\}))?\backslash s*(am|pm)?\$} \quad (\text{case-insensitive})$$
+```regex
+^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$
+```
+*(case-insensitive evaluation)*
 
 - If meridian ($\text{AM}/\text{PM}$) is omitted:
   - Hours $1 \le h \le 8 \implies \text{PM}$ (e.g. `2` becomes `02:00 PM`).

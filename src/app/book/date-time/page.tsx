@@ -4,15 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function DateTimeSelection() {
   const router = useRouter();
   const { items, bookingDetails, setBookingDetails, clearCart, timeLeft, startTimer } = useCart();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    bookingDetails.date ? new Date(bookingDetails.date) : null
-  );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    if (!bookingDetails.date) return null;
+    return new Date(bookingDetails.date + 'T12:00:00');
+  });
   const [selectedTime, setSelectedTime] = useState<string | null>(bookingDetails.time);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
@@ -27,6 +26,15 @@ export default function DateTimeSelection() {
   const [storeHours, setStoreHours] = useState<any[]>([]);
   const [isHoursLoaded, setIsHoursLoaded] = useState(false);
 
+  // Helper to normalize time slot string for matching (e.g. "9:00 AM" vs "09:00 AM")
+  const normalizeSlot = (s: string): string => {
+    if (!s) return '';
+    const match = s.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return s.trim().toUpperCase();
+    const h = match[1].padStart(2, '0');
+    return `${h}:${match[2]} ${match[3].toUpperCase()}`;
+  };
+
   // Helper to get day name from date (e.g., 'monday')
   const getDayName = (date: Date) => {
     return date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
@@ -40,7 +48,7 @@ export default function DateTimeSelection() {
     if (!isHoursLoaded || storeHours.length === 0) return [];
     
     const dayName = getDayName(date);
-    const daySettings = storeHours.find(h => h.day === dayName);
+    const daySettings = storeHours.find(h => (h.day || '').toLowerCase() === dayName);
     
     if (!daySettings || daySettings.isClosed) return [];
     
@@ -59,7 +67,7 @@ export default function DateTimeSelection() {
       return `${displayH.toString().padStart(2, '0')}:00 ${ampm}`;
     };
 
-    let validHours = FIXED_SLOT_HOURS.filter(h => h >= openH && (closeH <= openH || h < closeH));
+    let validHours = FIXED_SLOT_HOURS.filter(h => h >= openH && (closeH <= openH || h <= closeH));
     
     if (isToday) {
       validHours = validHours.filter(h => h > currentHour);
@@ -79,12 +87,12 @@ export default function DateTimeSelection() {
     
     // 2. Soak Off + Customised Set hides 3 PM slot
     const hasSoakOff = items.some(item => 
-      item.name.toLowerCase().includes('soak off') || 
-      item.selectedExtras?.some(ex => ex.name.toLowerCase().includes('soak off'))
+      item.name?.toLowerCase().includes('soak off') || 
+      item.selectedExtras?.some((ex: any) => ex.name?.toLowerCase().includes('soak off'))
     );
     const hasCustomisedSet = items.some(item => 
-      item.name.toLowerCase().includes('custom') || 
-      item.name.toLowerCase().includes('freestyle') ||
+      item.name?.toLowerCase().includes('custom') || 
+      item.name?.toLowerCase().includes('freestyle') ||
       !!item.selectedDesign
     );
     
@@ -94,8 +102,8 @@ export default function DateTimeSelection() {
 
     // 3. Custom Service / Freestyle cannot be booked at 3 PM UNLESS they add 1 or 2 extras
     const hasCustomOrFreestyle = items.some(item => 
-      item.name.toLowerCase().includes('custom') || 
-      item.name.toLowerCase().includes('freestyle')
+      item.name?.toLowerCase().includes('custom') || 
+      item.name?.toLowerCase().includes('freestyle')
     );
     
     if (hasCustomOrFreestyle && totalExtrasCount === 0) {
@@ -264,9 +272,15 @@ export default function DateTimeSelection() {
       const slotsForThisDay = generateSlotsForDate(date);
       const isClosed = isHoursLoaded && slotsForThisDay.length === 0;
       
-      const dayBookings = allBookings[dateStr] || [];
-      const isFullyBooked = !isClosed && slotsForThisDay.length > 0 && dayBookings.length >= slotsForThisDay.length;
-      const hasSomeBookings = dayBookings.length > 0 && !isFullyBooked;
+      const dayBookings = (allBookings[dateStr] || []).map(normalizeSlot);
+      const normalizedSlots = slotsForThisDay.map(normalizeSlot);
+      
+      // A day is only fully booked if EVERY available slot for this service is booked
+      const isFullyBooked = !isClosed && 
+        normalizedSlots.length > 0 && 
+        normalizedSlots.every(slot => dayBookings.includes(slot));
+
+      const hasSomeBookings = !isClosed && !isFullyBooked && normalizedSlots.some(slot => dayBookings.includes(slot));
       
       const isDisabled = isPast || isClosed || isFullyBooked;
 
@@ -395,8 +409,12 @@ export default function DateTimeSelection() {
                         <svg className="animate-spin h-6 w-6 text-primary mb-2" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         <p className="text-xs font-medium">Checking availability...</p>
                       </div>
+                    ) : allSlots.length === 0 ? (
+                      <div className="col-span-full py-6 text-center text-gray-500 text-sm">
+                        No available appointment slots on this date.
+                      </div>
                     ) : allSlots.map((time, idx) => {
-                      const isBooked = bookedSlots.includes(time);
+                      const isBooked = bookedSlots.map(normalizeSlot).includes(normalizeSlot(time));
                       return (
                         <button
                           key={idx}
