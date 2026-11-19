@@ -553,7 +553,7 @@ export async function POST(request: Request) {
     const totalNum = typeof total === 'number' 
       ? total 
       : parseInt(String(total || '0').replace(/[^\d]/g, ''), 10) || 0;
-    const expectedDeposit = Math.min(totalNum, depositAmount);
+    const expectedDeposit = totalNum > 0 ? Math.min(totalNum, depositAmount) : depositAmount;
 
     // AI Verification
     let finalStatus = 'PENDING_VERIFICATION';

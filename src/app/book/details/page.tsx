@@ -49,8 +49,23 @@ export default function DetailsForm() {
     fetchSettings();
   }, []);
 
-  // Restore payment modal state if page reloads
+  // Restore payment modal state and form data if page reloads (e.g. after bank app transfer)
   useEffect(() => {
+    try {
+      const savedForm = localStorage.getItem('estar_saved_form_data');
+      if (savedForm) {
+        const parsed = JSON.parse(savedForm);
+        setFormData(prev => ({
+          firstName: prev.firstName || parsed.firstName || '',
+          lastName: prev.lastName || parsed.lastName || '',
+          email: prev.email || parsed.email || '',
+          phone: prev.phone || parsed.phone || '',
+          instagram: prev.instagram || parsed.instagram || '',
+          notes: prev.notes || parsed.notes || ''
+        }));
+      }
+    } catch(e) {}
+
     const savedState = localStorage.getItem('estar_payment_started');
     if (savedState === 'true' && items.length > 0) {
       setShowPaymentModal(true);
@@ -58,8 +73,22 @@ export default function DetailsForm() {
     }
   }, [items.length]);
 
+  // Synchronize formData with bookingDetails from CartContext once hydrated
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (bookingDetails.firstName || bookingDetails.email || bookingDetails.phone) {
+      setFormData(prev => ({
+        firstName: prev.firstName || bookingDetails.firstName || '',
+        lastName: prev.lastName || bookingDetails.lastName || '',
+        email: prev.email || bookingDetails.email || '',
+        phone: prev.phone || bookingDetails.phone || '',
+        instagram: prev.instagram || bookingDetails.instagram || '',
+        notes: prev.notes || bookingDetails.notes || ''
+      }));
+    }
+  }, [bookingDetails]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: any) => {
       if (user) {
         const token = await user.getIdTokenResult();
         setIsAdmin(!!token.claims.admin);
@@ -139,7 +168,7 @@ export default function DetailsForm() {
     return sum + (priceNum * (item.quantity || 1));
   }, 0);
 
-  const requiredDeposit = Math.min(totalAmount, depositAmount);
+  const requiredDeposit = totalAmount > 0 ? Math.min(totalAmount, depositAmount) : depositAmount;
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +186,7 @@ export default function DetailsForm() {
       }));
       
       // Save state to localStorage to survive bank app switching
+      localStorage.setItem('estar_saved_form_data', JSON.stringify(formData));
       localStorage.setItem('estar_payment_started', 'true');
       setShowPaymentModal(true);
     }
@@ -171,6 +201,34 @@ export default function DetailsForm() {
     setIsSubmitting(true);
     const bookingRef = bookingDetails.bookingRef || "ESN-" + Math.random().toString(36).substr(2, 6).toUpperCase();
 
+    // Fallback lookup from localStorage and CartContext in case tab refreshed during banking app transfer
+    let savedForm: any = {};
+    try {
+      const rawSaved = localStorage.getItem('estar_saved_form_data') || localStorage.getItem('estar_booking_details');
+      if (rawSaved) savedForm = JSON.parse(rawSaved);
+    } catch(e) {}
+
+    const finalFirstName = (formData.firstName || bookingDetails.firstName || savedForm.firstName || '').trim();
+    const finalLastName = (formData.lastName || bookingDetails.lastName || savedForm.lastName || '').trim();
+    const finalEmail = (formData.email || bookingDetails.email || savedForm.email || '').trim();
+    const finalPhone = (formData.phone || bookingDetails.phone || savedForm.phone || '').trim();
+    const finalInstagram = (formData.instagram || bookingDetails.instagram || savedForm.instagram || '').trim();
+    const finalNotes = (formData.notes || bookingDetails.notes || savedForm.notes || '').trim();
+    const finalDate = (bookingDetails.date || savedForm.date || '').trim();
+    const finalTime = (bookingDetails.time || savedForm.time || '').trim();
+
+    if (!finalEmail || !finalFirstName || !finalPhone) {
+      toast.error("Contact details were cleared when switching apps. Please close this modal, verify your name and email, and continue.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!finalDate || !finalTime) {
+      toast.error("Appointment date/time is missing. Please go back and select your appointment slot.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const safePhotoUrl = bookingDetails.photoUrl && bookingDetails.photoUrl.startsWith('data:image') 
         ? null 
@@ -180,9 +238,14 @@ export default function DetailsForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          date: bookingDetails.date,
-          time: bookingDetails.time,
+          firstName: finalFirstName,
+          lastName: finalLastName,
+          email: finalEmail,
+          phone: finalPhone,
+          instagram: finalInstagram,
+          notes: finalNotes,
+          date: finalDate,
+          time: finalTime,
           items,
           total: totalAmount,
           ref: bookingRef,
@@ -210,7 +273,12 @@ export default function DetailsForm() {
 
       setBookingDetails(prev => ({
         ...prev,
-        ...formData,
+        firstName: finalFirstName,
+        lastName: finalLastName,
+        email: finalEmail,
+        phone: finalPhone,
+        instagram: finalInstagram,
+        notes: finalNotes,
         bookingRef
       }));
       
@@ -224,6 +292,7 @@ export default function DetailsForm() {
       }
       
       localStorage.removeItem('estar_payment_started');
+      localStorage.removeItem('estar_saved_form_data');
       router.push('/book/success');
       
     } catch (err: any) {
